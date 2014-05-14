@@ -28,13 +28,20 @@ endif
 # Make the headers define our internal stuff
 DEF_CFLAGS += -D__INSIDE_MINIOS__
 
+# The name of the architecture specific library.
+# This is on x86_32: libx86_32.a
+# $(ARCH_LIB) has to built in the architecture specific directory.
+ARCH_LIB_NAME = $(MINIOS_TARGET_ARCH)
+ARCH_LIB := lib$(ARCH_LIB_NAME).a
+ARCH_LDFLAGS += -l$(ARCH_LIB_NAME)
+
 # Build the CFLAGS and ASFLAGS for compiling and assembling.
 # DEF_... flags are the common mini-os flags,
 # ARCH_... flags may be defined in arch/$(TARGET_ARCH_FAM/rules.mk
 CFLAGS := $(DEF_CFLAGS) $(ARCH_CFLAGS) $(DEFINES-y)
 CPPFLAGS := $(DEF_CPPFLAGS) $(ARCH_CPPFLAGS)
 ASFLAGS := $(DEF_ASFLAGS) $(ARCH_ASFLAGS) $(DEFINES-y)
-LDFLAGS := $(DEF_LDFLAGS) $(ARCH_LDFLAGS)
+LDFLAGS := $(DEF_LDFLAGS) $(ARCH_LDFLAGS) -L$(TARGET_ARCH_DIR)
 
 # Special build dependencies.
 # Rebuild all after touching this/these file(s)
@@ -51,12 +58,6 @@ HDRS += $(extra_heads)
 
 # Add the special header directories to the include paths.
 override CPPFLAGS := $(CPPFLAGS) $(extra_incl)
-
-# The name of the architecture specific library.
-# This is on x86_32: libx86_32.a
-# $(ARCH_LIB) has to built in the architecture specific directory.
-ARCH_LIB_NAME = $(MINIOS_TARGET_ARCH)
-ARCH_LIB := lib$(ARCH_LIB_NAME).a
 
 # This object contains the entrypoint for startup from Xen.
 # $(HEAD_ARCH_OBJ) has to be built in the architecture specific directory.
