@@ -14,6 +14,11 @@ GENERATED_HEADERS := include/list.h $(ARCH_LINKS) include/mini-os include/$(TARG
 
 EXTRA_DEPS += $(GENERATED_HEADERS)
 
+# Installation location
+PREFIX ?= /usr
+LIBDIR ?= ${PREFIX}/lib
+INCLUDEDIR ?= ${PREFIX}/include
+
 # Include common mini-os makerules.
 include minios.mk
 
@@ -177,6 +182,37 @@ CONFIG_FILE ?= $(CURDIR)/minios-config.mk
 config:
 	echo "$(DEFINES-y)" >$(CONFIG_FILE)
 
+libminios.a: $(HEAD_OBJ) $(APP_O) $(OBJS) arch_lib
+	rm -f $@
+	ar rcs $@ $(APP_O) $(OBJS) $(OBJ_DIR)/$(TARGET_ARCH_DIR)/*.o
+
+%.pc: %.pc.in
+	sed \
+	  -e 's/@ARCH_LDFLAGS@/${ARCH_LDFLAGS}/g' \
+	  -e 's/@ARCH_CFLAGS@/${ARCH_CFLAGS}/g' \
+	  -e 's!@GCC_INSTALL@!${GCC_INSTALL}!g' \
+	  $^ > $@
+
+# Note: don't install directly to $(DESTDIR)$(LIBDIR) because pkg-config strips out directories in the
+# standard search path but we usually compile using -nostdlib.
+.PHONY: install
+install: libminios.a libminios-xen.pc
+	$(INSTALL_DIR) $(DESTDIR)$(LIBDIR)/minios-xen
+	$(INSTALL_DIR) $(DESTDIR)$(LIBDIR)/pkgconfig
+	$(INSTALL_DIR) $(DESTDIR)$(INCLUDEDIR)
+	$(INSTALL_DIR) $(DESTDIR)$(INCLUDEDIR)/minios-xen
+	$(eval REALDESTDIR := $(abspath $(DESTDIR)))
+	$(INSTALL_DATA) libminios.a $(REALDESTDIR)$(LIBDIR)/minios-xen
+	$(INSTALL_DATA) $(OBJ_DIR)/$(TARGET_ARCH_DIR)/$(ARCH_LIB) $(REALDESTDIR)$(LIBDIR)/minios-xen
+	$(INSTALL_DATA) arch/$(TARGET_ARCH_FAM)/minios-$(MINIOS_TARGET_ARCH).lds $(REALDESTDIR)$(LIBDIR)/minios-xen/libminios.lds
+	(cd include && find -H . -type d | xargs -I {} $(INSTALL_DIR) $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/{})
+	(cd include && find -H . -type f | xargs -I {} $(INSTALL_DATA) {} $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/{})
+	(cd include/xen && find -H . -type d | xargs -I {} $(INSTALL_DIR) $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/xen/{})
+	(cd include/xen && find -H . -type f | xargs -I {} $(INSTALL_DATA) {} $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/xen/{})
+	[ -L $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/mini-os ] || ln -s . $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/mini-os
+	$(INSTALL_DATA) $(foreach dir,$(EXTRA_INC),$(wildcard $(MINIOS_ROOT)/include/$(dir)/*.h)) $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/
+	$(INSTALL_DATA) libminios-xen.pc $(REALDESTDIR)$(LIBDIR)/pkgconfig
+
 .PHONY: clean arch_clean
 
 arch_clean:
@@ -191,6 +227,7 @@ clean:	arch_clean
 	find . $(OBJ_DIR) -type l | xargs rm -f
 	$(RM) $(OBJ_DIR)/lwip.a $(LWO)
 	rm -f tags TAGS
+	rm -f libminios-xen.pc
 
 .PHONY: testbuild
 TEST_CONFIGS := $(wildcard $(CURDIR)/$(TARGET_ARCH_DIR)/testbuild/*)

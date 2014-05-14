@@ -20,13 +20,8 @@
 #include <mini-os/gnttab.h>
 #include <mini-os/semaphore.h>
 
-#define NR_RESERVED_ENTRIES 8
+grant_entry_v1_t *gnttab_table;
 
-/* NR_GRANT_FRAMES must be less than or equal to that configured in Xen */
-#define NR_GRANT_FRAMES 4
-#define NR_GRANT_ENTRIES (NR_GRANT_FRAMES * PAGE_SIZE / sizeof(grant_entry_v1_t))
-
-static grant_entry_v1_t *gnttab_table;
 static grant_ref_t gnttab_list[NR_GRANT_ENTRIES];
 #ifdef GNT_DEBUG
 static char inuse[NR_GRANT_ENTRIES];
