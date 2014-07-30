@@ -26,7 +26,7 @@ DEF_CFLAGS += -g
 #DEF_CFLAGS += -DGNT_DEBUG
 #DEF_CFLAGS += -DGNTMAP_DEBUG
 else
-DEF_CFLAGS += -O3
+DEF_CFLAGS += -O3 $(call cc-option,$(CC),-fno-tree-loop-distribute-patterns,)
 endif
 
 # Make the headers define our internal stuff
