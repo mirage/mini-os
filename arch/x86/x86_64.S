@@ -14,7 +14,7 @@ ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS, .asciz "Mini-OS")
 ELFNOTE(Xen, XEN_ELFNOTE_LOADER, .asciz "generic")
 ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _WORD hypercall_page)
 ELFNOTE(Xen, XEN_ELFNOTE_XEN_VERSION, .asciz "xen-3.0")
-.text
+.section .bootcode
 
 .globl _start
 
@@ -43,6 +43,7 @@ shared_info:
 hypercall_page:
         .fill __PAGE_SIZE,1,0
 
+.text
 
 #define XEN_GET_VCPU_INFO(reg)	movq HYPERVISOR_shared_info,reg
 #define XEN_LOCKED_BLOCK_EVENTS(reg)	movb $1,evtchn_upcall_mask(reg)

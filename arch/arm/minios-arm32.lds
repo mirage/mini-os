@@ -12,6 +12,7 @@ SECTIONS
   .		 = 0x408000;
   _text = .;			/* Text and read-only data */
   .text : {
+	*(.bootcode)
 	*(.text)
 	*(.gnu.warning)
 	} = 0x9090
