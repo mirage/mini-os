@@ -14,7 +14,8 @@ ELFNOTE(Xen, XEN_ELFNOTE_LOADER, .asciz "generic")
 ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _WORD hypercall_page)
 ELFNOTE(Xen, XEN_ELFNOTE_XEN_VERSION, .asciz "xen-3.0")
 ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE, .asciz "yes")
-.text
+
+.section .bootcode
 
 .globl _start
                         
@@ -45,6 +46,8 @@ shared_info:
 
 hypercall_page:
         .fill __PAGE_SIZE,1,0
+
+.text
 
 ES		= 0x20
 ORIG_EAX	= 0x24
