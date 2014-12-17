@@ -11,7 +11,7 @@
 
 #else
 
-#include <limits.h>
+#include <posix/limits.h>
 
 #define DEFAULT_ALIGN (sizeof(unsigned long))
 

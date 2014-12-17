@@ -48,6 +48,7 @@
 #ifndef _LIB_H_
 #define _LIB_H_
 
+#include <stdint.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <xen/xen.h>
