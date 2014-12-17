@@ -7,5 +7,5 @@ Name: mini-os
 Version: 0.2
 URL: http://wiki.xen.org/wiki/Mini-OS
 Description: A tiny OS kernel that can run under Xen
-Cflags: -I${includedir} @ARCH_CFLAGS@
+Cflags: -I${includedir} -isystem ${includedir}/posix @ARCH_CFLAGS@
 Libs: -L${libdir}/minios-xen -lminios -T ${libdir}/minios-xen/libminios.lds @ARCH_LDFLAGS@
