@@ -4,8 +4,12 @@
 
 debug = y
 
+GCC_INSTALL = $(shell LANG=C gcc -print-search-dirs | sed -n -e 's/install: \(.*\)/\1/p')
+
 # Define some default flags.
 # NB. '-Wcast-qual' is nasty, so I omitted it.
+DEF_CFLAGS += -nostdinc
+DEF_CFLAGS += -isystem $(GCC_INSTALL)include
 DEF_CFLAGS += -fno-builtin -Wall -Werror -Wredundant-decls -Wno-format -Wno-redundant-decls -Wformat
 DEF_CFLAGS += $(call cc-option,$(CC),-fno-stack-protector,)
 DEF_CFLAGS += $(call cc-option,$(CC),-fgnu89-inline)
