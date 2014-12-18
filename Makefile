@@ -185,7 +185,11 @@ libminios.a: $(HEAD_OBJ) $(APP_O) $(OBJS) arch_lib
 	ar rcs $@ $(APP_O) $(OBJS) $(OBJ_DIR)/$(TARGET_ARCH_DIR)/*.o
 
 %.pc: %.pc.in
-	sed 's/@ARCH_LDFLAGS@/${ARCH_LDFLAGS}/g' $^ | sed 's/@ARCH_CFLAGS@/${ARCH_CFLAGS}/g' > $@
+	sed \
+	  -e 's/@ARCH_LDFLAGS@/${ARCH_LDFLAGS}/g' \
+	  -e 's/@ARCH_CFLAGS@/${ARCH_CFLAGS}/g' \
+	  -e 's!@GCC_INSTALL@!${GCC_INSTALL}!g' \
+	  $^ > $@
 
 # Note: don't install directly to $(DESTDIR)$(LIBDIR) because pkg-config strips out directories in the
 # standard search path but we usually compile using -nostdlib.
