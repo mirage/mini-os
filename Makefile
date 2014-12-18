@@ -63,6 +63,7 @@ src-y += lib/printf.c
 src-y += lib/stack_chk_fail.c
 src-y += lib/string.c
 src-y += lib/sys.c
+src-y += lib/assert.c
 src-y += lib/xmalloc.c
 src-$(CONFIG_XENBUS) += lib/xs.c
 

@@ -50,6 +50,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <assert.h>
 #include <xen/xen.h>
 #include <xen/event_channel.h>
 #include "gntmap.h"
@@ -136,16 +137,7 @@ int rand(void);
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-#define ASSERT(x)                                              \
-do {                                                           \
-	if (!(x)) {                                                \
-		printk("ASSERTION FAILED: %s at %s:%d.\n",             \
-			   # x ,                                           \
-			   __FILE__,                                       \
-			   __LINE__);                                      \
-        BUG();                                                 \
-	}                                                          \
-} while(0)
+#define ASSERT(x) assert(x)
 
 #define BUG_ON(x) ASSERT(!(x))
 
