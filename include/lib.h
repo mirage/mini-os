@@ -128,6 +128,8 @@ extern int vsscanf(const char *, const char *, va_list)
 
 #endif
 
+#include <string.h>
+
 #include <mini-os/console.h>
 
 #define RAND_MIX 2654435769U

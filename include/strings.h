@@ -1,3 +1,3 @@
-#include <lib.h>
+#include <string.h>
 
 int ffs(int);
