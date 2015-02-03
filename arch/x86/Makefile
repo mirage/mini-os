@@ -13,7 +13,7 @@ include ../../minios.mk
 
 # Sources here are all *.c *.S without $(MINIOS_TARGET_ARCH).S
 # This is handled in $(HEAD_ARCH_OBJ)
-ARCH_SRCS := $(wildcard *.c)
+ARCH_SRCS := $(sort $(wildcard *.c))
 
 # The objects built from the sources.
 ARCH_OBJS := $(patsubst %.c,$(OBJ_DIR)/%.o,$(ARCH_SRCS))

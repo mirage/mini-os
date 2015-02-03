@@ -146,9 +146,9 @@ arch_lib:
 
 ifeq ($(CONFIG_LWIP),y)
 # lwIP library
-LWC	:= $(shell find $(LWIPDIR)/src -type f -name '*.c')
+LWC	:= $(sort $(shell find $(LWIPDIR)/src -type f -name '*.c'))
 LWC	:= $(filter-out %6.c %ip6_addr.c %ethernetif.c, $(LWC))
-LWO	:= $(patsubst %.c,%.o,$(LWC))
+LWO	:= $(patsubst %.c,%.o,$(LWC)
 LWO	+= $(OBJ_DIR)/lwip-arch.o
 ifeq ($(CONFIG_NETFRONT),y)
 LWO += $(OBJ_DIR)/lwip-net.o
