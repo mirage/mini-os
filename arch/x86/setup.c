@@ -298,5 +298,4 @@ arch_fini(void)
 void
 arch_do_exit(void)
 {
-	stack_walk();
 }
