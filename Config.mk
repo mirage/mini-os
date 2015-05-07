@@ -1,4 +1,5 @@
-#
+.SUFFIXES:
+
 # Compare $(1) and $(2) and replace $(2) with $(1) if they differ
 #
 # Typically $(1) is a newly generated file and $(2) is the target file
