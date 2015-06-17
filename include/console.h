@@ -64,8 +64,8 @@ struct consfront_dev {
 
 
 void print(int direct, const char *fmt, va_list args);
-void printk(const char *fmt, ...);
-void xprintk(const char *fmt, ...);
+void printk(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void xprintk(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
 #define tprintk(_fmt, _args...) printk("[%s] " _fmt, current->name, ##_args) 
 

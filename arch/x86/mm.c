@@ -94,7 +94,7 @@ static void new_pt_frame(unsigned long *pt_pfn, unsigned long prev_l_mfn,
         break;
 #endif
     default:
-        printk("new_pt_frame() called with invalid level number %d\n", level);
+        printk("new_pt_frame() called with invalid level number %lu\n", level);
         do_exit();
         break;
     }
@@ -181,7 +181,7 @@ static int need_pt_frame(unsigned long va, int level)
         if ( level == L1_FRAME )
             return 1;
 
-    printk("ERROR: Unknown frame level %d, hypervisor %llx,%llx\n", 
+    printk("ERROR: Unknown frame level %d, hypervisor %lx,%lx\n", 
            level, hyp_virt_start, hyp_virt_end);
     return -1;
 }
@@ -206,11 +206,11 @@ static void build_pagetable(unsigned long *start_pfn, unsigned long *max_pfn)
     if ( *max_pfn >= virt_to_pfn(HYPERVISOR_VIRT_START) )
     {
         printk("WARNING: Mini-OS trying to use Xen virtual space. "
-               "Truncating memory from %dMB to ",
+               "Truncating memory from %luMB to ",
                ((unsigned long)pfn_to_virt(*max_pfn) -
                 (unsigned long)&_text)>>20);
         *max_pfn = virt_to_pfn(HYPERVISOR_VIRT_START - PAGE_SIZE);
-        printk("%dMB\n",
+        printk("%luMB\n",
                ((unsigned long)pfn_to_virt(*max_pfn) - 
                 (unsigned long)&_text)>>20);
     }
@@ -326,7 +326,7 @@ static void set_readonly(void *text, void *etext)
             count++;
         }
         else
-            printk("skipped %p\n", start_address);
+            printk("skipped %lx\n", start_address);
 
         start_address += PAGE_SIZE;
 
@@ -369,21 +369,21 @@ int mem_test(unsigned long *start_va, unsigned long *end_va, int verbose)
     /* write values and print page walks */
     if ( verbose && (((unsigned long)start_va) & 0xfffff) )
     {
-        printk("MemTest Start: 0x%lx\n", start_va);
+        printk("MemTest Start: 0x%p\n", start_va);
         page_walk((unsigned long)start_va);
     }
     for ( pointer = start_va; pointer < end_va; pointer++ )
     {
         if ( verbose && !(((unsigned long)pointer) & 0xfffff) )
         {
-            printk("Writing to %lx\n", pointer);
+            printk("Writing to %p\n", pointer);
             page_walk((unsigned long)pointer);
         }
         *pointer = (unsigned long)pointer & ~mask;
     }
     if ( verbose && (((unsigned long)end_va) & 0xfffff) )
     {
-        printk("MemTest End: %lx\n", end_va-1);
+        printk("MemTest End: %p\n", end_va-1);
         page_walk((unsigned long)end_va-1);
     }
  
@@ -516,7 +516,7 @@ void arch_init_demand_mapping_area(unsigned long cur_pfn)
 
     demand_map_area_start = (unsigned long) pfn_to_virt(cur_pfn);
     cur_pfn += DEMAND_MAP_PAGES;
-    printk("Demand map pfns at %lx-%lx.\n", 
+    printk("Demand map pfns at %lx-%p.\n", 
            demand_map_area_start, pfn_to_virt(cur_pfn));
 
 #ifdef HAVE_LIBC
@@ -619,7 +619,7 @@ void do_map_frames(unsigned long va,
                 if (err)
                     err[done * stride] = rc;
                 else {
-                    printk("Map %ld (%lx, ...) at %p failed: %d.\n",
+                    printk("Map %ld (%lx, ...) at %lx failed: %d.\n",
                            todo, mfns[done * stride] + done * incr, va, rc);
                     do_exit();
                 }
@@ -793,7 +793,7 @@ unsigned long alloc_contig_pages(int order, unsigned int addr_bits)
     out_frames = virt_to_pfn(in_va); /* PFNs to populate */
     ret = HYPERVISOR_memory_op(XENMEM_exchange, &exchange);
     if ( ret ) {
-        printk("mem exchanged order=0x%x failed with rc=%d, nr_exchanged=%d\n", 
+        printk("mem exchanged order=0x%x failed with rc=%d, nr_exchanged=%lu\n",
                order, ret, exchange.nr_exchanged);
         /* we still need to return the allocated pages above to the pool
          * ie. map them back into the 1:1 mapping etc. so we continue but 

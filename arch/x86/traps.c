@@ -34,14 +34,14 @@ void dump_regs(struct pt_regs *regs)
 {
     printk("Thread: %s\n", current->name);
 #ifdef __i386__    
-    printk("EIP: %x, EFLAGS %x.\n", regs->eip, regs->eflags);
-    printk("EBX: %08x ECX: %08x EDX: %08x\n",
+    printk("EIP: %lx, EFLAGS %lx.\n", regs->eip, regs->eflags);
+    printk("EBX: %08lx ECX: %08lx EDX: %08lx\n",
 	   regs->ebx, regs->ecx, regs->edx);
-    printk("ESI: %08x EDI: %08x EBP: %08x EAX: %08x\n",
+    printk("ESI: %08lx EDI: %08lx EBP: %08lx EAX: %08lx\n",
 	   regs->esi, regs->edi, regs->ebp, regs->eax);
-    printk("DS: %04x ES: %04x orig_eax: %08x, eip: %08x\n",
+    printk("DS: %04x ES: %04x orig_eax: %08lx, eip: %08lx\n",
 	   regs->xds, regs->xes, regs->orig_eax, regs->eip);
-    printk("CS: %04x EFLAGS: %08x esp: %08x ss: %04x\n",
+    printk("CS: %04x EFLAGS: %08lx esp: %08lx ss: %04x\n",
 	   regs->xcs, regs->eflags, regs->esp, regs->xss);
 #else
     printk("RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->rip);
@@ -214,10 +214,10 @@ void do_page_fault(struct pt_regs *regs, unsigned long error_code)
     barrier();
 
 #if defined(__x86_64__)
-    printk("Page fault at linear address %p, rip %p, regs %p, sp %p, our_sp %p, code %lx\n",
+    printk("Page fault at linear address %lx, rip %lx, regs %p, sp %lx, our_sp %p, code %lx\n",
            addr, regs->rip, regs, regs->rsp, &addr, error_code);
 #else
-    printk("Page fault at linear address %p, eip %p, regs %p, sp %p, our_sp %p, code %lx\n",
+    printk("Page fault at linear address %lx, eip %lx, regs %p, sp %lx, our_sp %p, code %lx\n",
            addr, regs->eip, regs, regs->esp, &addr, error_code);
 #endif
 
@@ -243,9 +243,9 @@ void do_general_protection(struct pt_regs *regs, long error_code)
 {
     struct sched_shutdown sched_shutdown = { .reason = SHUTDOWN_crash };
 #ifdef __i386__
-    printk("GPF eip: %p, error_code=%lx\n", regs->eip, error_code);
+    printk("GPF eip: %lx, error_code=%lx\n", regs->eip, error_code);
 #else    
-    printk("GPF rip: %p, error_code=%lx\n", regs->rip, error_code);
+    printk("GPF rip: %lx, error_code=%lx\n", regs->rip, error_code);
 #endif
     dump_regs(regs);
 #if defined(__x86_64__)

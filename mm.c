@@ -379,7 +379,11 @@ void *sbrk(ptrdiff_t increment)
     unsigned long new_brk = old_brk + increment;
 
     if (new_brk > heap_end) {
-	printk("Heap exhausted: %p + %lx = %p > %p\n", old_brk, increment, new_brk, heap_end);
+	printk("Heap exhausted: %lx + %lx = %p > %p\n",
+			old_brk,
+			(unsigned long) increment,
+			(void *) new_brk,
+			(void *) heap_end);
 	return NULL;
     }
     

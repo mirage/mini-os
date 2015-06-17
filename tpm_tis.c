@@ -912,7 +912,7 @@ static ssize_t tpm_transmit(struct tpm_chip *chip, const uint8_t *buf,
    //down(&chip->tpm_mutex);
 
    if ((rc = tpm_tis_send(chip, (uint8_t *) buf, count)) < 0) {
-      printk("tpm_transmit: tpm_send: error %ld\n", rc);
+      printk("tpm_transmit: tpm_send: error %ld\n", (long) rc);
       goto out;
    }
 
@@ -944,7 +944,7 @@ static ssize_t tpm_transmit(struct tpm_chip *chip, const uint8_t *buf,
 
 out_recv:
    if((rc = tpm_tis_recv(chip, (uint8_t *) buf, bufsiz)) < 0) {
-      printk("tpm_transmit: tpm_recv: error %d\n", rc);
+      printk("tpm_transmit: tpm_recv: error %d\n", (int) rc);
    }
 out:
    //up(&chip->tpm_mutex);
@@ -983,7 +983,7 @@ int tpm_get_timeouts(struct tpm_chip *chip)
 
    if((rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
 	 "attempting to determine the timeouts")) != 0) {
-      printk("transmit failed %d\n", rc);
+      printk("transmit failed %d\n", (int) rc);
       goto duration;
    }
 
@@ -1145,7 +1145,7 @@ struct tpm_chip* init_tpm_tis(unsigned long baseaddr, int localities, unsigned i
       if(locality_enabled(tpm, i)) {
 	 /* Map the page in now */
 	 if((tpm->pages[i] = ioremap_nocache(addr, PAGE_SIZE)) == NULL) {
-	    printk("Unable to map iomem page a address %p\n", addr);
+	    printk("Unable to map iomem page a address %lx\n", addr);
 	    goto abort_egress;
 	 }
 

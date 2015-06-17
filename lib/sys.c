@@ -1319,7 +1319,7 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp)
 	    break;
 	}
 	default:
-	    print_unsupported("clock_gettime(%d)", clk_id);
+	    print_unsupported("clock_gettime(%ld)", (long) clk_id);
 	    errno = EINVAL;
 	    return -1;
     }
@@ -1421,7 +1421,7 @@ void sparse(unsigned long data, size_t size)
         mfns[i] = virtual_to_mfn(data + i * PAGE_SIZE);
     }
 
-    printk("sparsing %ldMB at %lx\n", size >> 20, data);
+    printk("sparsing %ldMB at %lx\n", ((long) size) >> 20, data);
 
     munmap((void *) data, size);
     free_physical_pages(mfns, n);

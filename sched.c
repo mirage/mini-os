@@ -276,7 +276,7 @@ void th_f2(void *data)
 {
     for(;;)
     {
-        printk("Thread OTHER executing, data 0x%lx\n", data);
+        printk("Thread OTHER executing, data 0x%p\n", data);
         schedule();
     }
 }

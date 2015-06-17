@@ -337,8 +337,8 @@ void init_xenbus(void)
 		      xenbus_evtchn_handler,
               NULL);
     unmask_evtchn(start_info.store_evtchn);
-    printk("xenbus initialised on irq %d mfn %#lx\n",
-	   err, start_info.store_mfn);
+    printk("xenbus initialised on irq %d mfn %#llx\n",
+	   err, (unsigned long long) start_info.store_mfn);
 }
 
 void fini_xenbus(void)
