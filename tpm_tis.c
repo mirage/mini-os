@@ -1429,7 +1429,7 @@ struct tpm_chip* init_tpm2_tis(unsigned long baseaddr, int localities, unsigned 
 
             /* Map the page in now */
             if ((tpm->pages[i] = ioremap_nocache(addr, PAGE_SIZE)) == NULL) {
-                printk("Unable to map iomem page a address %p\n", addr);
+                printk("Unable to map iomem page a address %lx\n", addr);
                 goto abort_egress;
             }
 
