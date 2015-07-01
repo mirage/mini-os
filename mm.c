@@ -280,8 +280,6 @@ unsigned long alloc_pages(int order)
 
  no_memory:
 
-    printk("Cannot handle page request order %d!\n", order);
-
     return 0;
 }
 
