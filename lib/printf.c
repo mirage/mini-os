@@ -346,12 +346,14 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
         /* get the conversion qualifier */
         qualifier = -1;
-        if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L' || *fmt =='Z') {
+        if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L' || *fmt =='Z' || *fmt == 'z') {
             qualifier = *fmt;
             ++fmt;
             if (qualifier == 'l' && *fmt == 'l') {
                 qualifier = 'L';
                 ++fmt;
+            } else if (qualifier == 'z') {
+                qualifier = 'Z';
             }
         }
         if (*fmt == 'q') {
