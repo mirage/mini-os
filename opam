@@ -1,0 +1,32 @@
+opam-version: "2.0"
+maintainer: "mirageos-devel@lists.openmirage.org"
+authors: "Thomas Leonard <talex5@gmail.com>"
+homepage: "https://github.com/mirage/mini-os"
+bug-reports: "https://github.com/mirage/mini-os/issues"
+license: "BSD + some optional GPL components"
+dev-repo: "git+https://github.com/mirage/mini-os.git"
+available: os = "linux"
+build: [
+  ["sh" "-ex" "./build-opam.sh"]
+]
+install: [
+  [make "install" "LIBDIR=%{prefix}%/lib" "INCLUDEDIR=%{prefix}%/include"]
+]
+remove: [
+  ["rm" "-r"
+    "%{prefix}%/lib/minios-xen"
+    "%{prefix}%/lib/pkgconfig/libminios-xen.pc"
+    "%{prefix}%/include/minios-xen"
+  ]
+]
+depends: [
+  "conf-perl" {build}
+  "conf-findutils" {build}
+]
+flags: light-uninstall
+synopsis: "A minimal OS for running under the Xen hypervisor"
+description: """
+Mini-OS provides architecture-specific boot code, a stack, malloc, an interrupt
+handler, a console driver, and some basic C functions. It can be used as a
+library to build unikernels such as Mirage.
+"""
