@@ -44,3 +44,10 @@ show a mouse with which you can draw color squares.
 
 If you have compiled it with TCP/IP support, it will run a daytime server on
 TCP port 13.
+
+
+ ARM notes
+ =========
+
+- The IRQ numbers are currently hard-coded in gic.c and may need to be updated if
+  future versions of Xen change them.
