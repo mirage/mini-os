@@ -29,6 +29,7 @@
 #include <mini-os/os.h>
 #include <mini-os/lib.h> /* for printk, memcpy */
 #include <mini-os/kernel.h>
+#include <mini-os/console.h>
 #include <xen/xen.h>
 #include <xen/arch-x86/cpuid.h>
 #include <xen/arch-x86/hvm/start_info.h>
@@ -123,7 +124,6 @@ static void print_start_of_day(void *p)
 {
     start_info_t *si = p;
 
-    printk("Xen Minimal OS (pv)!\n");
 #ifdef CONFIG_VERBOSE_BOOT
     printk("  start_info: %p(VA)\n", si);
     printk("    nr_pages: 0x%lx\n", si->nr_pages);
@@ -172,7 +172,6 @@ static void print_start_of_day(void *p)
 {
     struct hvm_start_info *si = p;
 
-    printk("Xen Minimal OS (hvm)!\n");
 #ifdef CONFIG_VERBOSE_BOOT
     printk("  start_info: %p(VA)\n", si);
     printk("  shared_inf: %p(VA)\n", HYPERVISOR_shared_info);
@@ -218,6 +217,7 @@ arch_init(void *par)
 	HYPERVISOR_shared_info = map_shared_info(par);
 
 	/* print out some useful information  */
+	minios_show_banner();
 	print_start_of_day(par);
 
 #ifdef CONFIG_PARAVIRT

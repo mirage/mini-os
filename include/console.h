@@ -76,6 +76,7 @@ void xencons_rx(char *buf, unsigned len, struct pt_regs *regs);
 void xencons_tx(void);
 
 void get_console(void *p);
+void minios_show_banner(void);
 void init_console(void);
 void console_print(struct consfront_dev *dev, char *data, int length);
 void fini_consfront(struct consfront_dev *dev);

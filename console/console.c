@@ -175,3 +175,12 @@ void resume_console(void)
     xencons_ring_resume(xen_console);
     console_initialised = 1;
 }
+
+__attribute__((weak)) void minios_show_banner(void)
+{
+#ifdef CONFIG_PARAVIRT
+    printk("Xen Minimal OS (pv)!\n");
+#else
+    printk("Xen Minimal OS (hvm)!\n");
+#endif
+}
