@@ -237,6 +237,7 @@ static void xenbus_thread_func(void *ign)
 		event->path = data;
 		event->token = event->path + strlen(event->path) + 1;
 
+                mb();
                 xenstore_buf->rsp_cons += msg.len + sizeof(msg);
 
                 for (watch = watches; watch; watch = watch->next)
@@ -262,9 +263,13 @@ static void xenbus_thread_func(void *ign)
                     req_info[msg.req_id].reply,
                     MASK_XENSTORE_IDX(xenstore_buf->rsp_cons),
                     msg.len + sizeof(msg));
+                mb();
                 xenstore_buf->rsp_cons += msg.len + sizeof(msg);
                 wake_up(&req_info[msg.req_id].waitq);
             }
+
+            wmb();
+            notify_remote_via_evtchn(start_info.store_evtchn);
         }
     }
 }
