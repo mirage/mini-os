@@ -1,0 +1,6 @@
+*~
+*.o
+*.a
+include/list.h
+mini-os
+mini-os.gz
