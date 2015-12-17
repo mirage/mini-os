@@ -51,6 +51,9 @@ extern unsigned long nr_free_pages;
 extern unsigned long *mm_alloc_bitmap;
 extern unsigned long mm_alloc_bitmap_size;
 
+extern unsigned long minios_heap_pages_total;
+extern unsigned long minios_heap_pages_used;
+
 void init_mm(void);
 unsigned long alloc_pages(int order);
 #define alloc_page()    alloc_pages(0)
