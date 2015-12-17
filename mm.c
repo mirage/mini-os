@@ -61,6 +61,9 @@ unsigned long mm_alloc_bitmap_size;
 
 unsigned long nr_free_pages;
 
+unsigned long minios_heap_pages_used = 0;
+unsigned long minios_heap_pages_total = 0;
+
 /*
  * Hint regarding bitwise arithmetic in map_{alloc,free}:
  *  -(1<<n)  sets all bits >= n. 
@@ -73,6 +76,8 @@ unsigned long nr_free_pages;
 static void map_alloc(unsigned long first_page, unsigned long nr_pages)
 {
     unsigned long start_off, end_off, curr_idx, end_idx;
+
+    minios_heap_pages_used += nr_pages;
 
     curr_idx  = first_page / PAGES_PER_MAPWORD;
     start_off = first_page & (PAGES_PER_MAPWORD-1);
@@ -97,6 +102,8 @@ static void map_alloc(unsigned long first_page, unsigned long nr_pages)
 static void map_free(unsigned long first_page, unsigned long nr_pages)
 {
     unsigned long start_off, end_off, curr_idx, end_idx;
+
+    minios_heap_pages_used -= nr_pages;
 
     curr_idx = first_page / PAGES_PER_MAPWORD;
     start_off = first_page & (PAGES_PER_MAPWORD-1);
@@ -198,8 +205,12 @@ static void init_page_allocator(unsigned long min, unsigned long max)
         r_max = (unsigned long)to_virt(r_max);
         range = r_max - r_min;
 
+        minios_heap_pages_total = range >> PAGE_SHIFT;
+
         /* Free up the memory we've been given to play with. */
         map_free(PHYS_PFN(r_min), range >> PAGE_SHIFT);
+        minios_heap_pages_used = 0;
+
 
         while ( range != 0 )
         {
