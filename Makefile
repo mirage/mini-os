@@ -166,6 +166,7 @@ OBJS := $(filter-out $(OBJ_DIR)/lwip%.o $(LWO), $(OBJS))
 ifeq ($(libc),y)
 ifeq ($(CONFIG_XC),y)
 APP_LDLIBS += -L$(XEN_ROOT)/stubdom/libs-$(MINIOS_TARGET_ARCH)/toollog -whole-archive -lxentoollog -no-whole-archive
+APP_LDLIBS += -L$(XEN_ROOT)/stubdom/libs-$(MINIOS_TARGET_ARCH)/evtchn -whole-archive -lxenevtchn -no-whole-archive
 APP_LDLIBS += -L$(XEN_ROOT)/stubdom/libxc-$(MINIOS_TARGET_ARCH) -whole-archive -lxenguest -lxenctrl -no-whole-archive
 endif
 APP_LDLIBS += -lpci
