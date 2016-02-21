@@ -211,7 +211,7 @@ int evtchn_alloc_unbound(domid_t pal, evtchn_handler_t handler,
     rc = HYPERVISOR_event_channel_op(EVTCHNOP_alloc_unbound, &op);
     if ( rc )
     {
-        printk("ERROR: alloc_unbound failed with rc=%d", rc);
+        printk("ERROR: alloc_unbound failed with rc=%d\n", rc);
 		return rc;
     }
     *port = bind_evtchn(op.port, handler, data);
@@ -233,7 +233,7 @@ int evtchn_bind_interdomain(domid_t pal, evtchn_port_t remote_port,
     rc = HYPERVISOR_event_channel_op(EVTCHNOP_bind_interdomain, &op);
     if ( rc )
     {
-        printk("ERROR: bind_interdomain failed with rc=%d", rc);
+        printk("ERROR: bind_interdomain failed with rc=%d\n", rc);
 		return rc;
     }
     port = op.local_port;
