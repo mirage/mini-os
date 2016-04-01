@@ -97,19 +97,15 @@ void network_rx(struct netfront_dev *dev)
 {
     RING_IDX rp,cons,req_prod;
     int nr_consumed, more, i, notify;
-#ifdef HAVE_LIBC
-    int some;
-#endif
+    int dobreak;
 
     nr_consumed = 0;
 moretodo:
     rp = dev->rx.sring->rsp_prod;
     rmb(); /* Ensure we see queued responses up to 'rp'. */
 
-#ifdef HAVE_LIBC
-    some = 0;
-#endif
-    for (cons = dev->rx.rsp_cons; cons != rp; nr_consumed++, cons++)
+    dobreak = 0;
+    for (cons = dev->rx.rsp_cons; cons != rp && !dobreak; nr_consumed++, cons++)
     {
         struct net_buffer* buf;
         unsigned char* page;
@@ -134,8 +130,8 @@ moretodo:
 		    len = dev->len;
 		memcpy(dev->data, page+rx->offset, len);
 		dev->rlen = len;
-		some = 1;
-                break;
+		/* No need to receive the rest for now */
+		dobreak = 1;
 	    } else
 #endif
 		dev->netif_rx(page+rx->offset,rx->status);
@@ -144,11 +140,7 @@ moretodo:
     dev->rx.rsp_cons=cons;
 
     RING_FINAL_CHECK_FOR_RESPONSES(&dev->rx,more);
-#ifdef HAVE_LIBC
-    if(more && !some) goto moretodo;
-#else
-    if(more) goto moretodo;
-#endif
+    if(more && !dobreak) goto moretodo;
 
     req_prod = dev->rx.req_prod_pvt;
 
