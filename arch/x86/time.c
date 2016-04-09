@@ -160,7 +160,7 @@ uint64_t monotonic_clock(void)
 		local_time_version = shadow.version;
 		rmb();
 		time = shadow.system_timestamp + get_nsec_offset();
-        if (!time_values_up_to_date())
+		if (!time_values_up_to_date())
 			get_time_values_from_xen();
 		rmb();
 	} while (local_time_version != shadow.version);
@@ -199,8 +199,6 @@ int gettimeofday(struct timeval *tv, void *tz)
 
 void block_domain(s_time_t until)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
     ASSERT(irqs_disabled());
     if(monotonic_clock() < until)
     {
