@@ -14,7 +14,7 @@ EXTRA_DEPS += $(MINIOS_CONFIG)
 include $(MINIOS_CONFIG)
 endif
 
-include $(MINI-OS_ROOT)/config/MiniOS.mk
+include $(MINIOS_ROOT)/config/MiniOS.mk
 
 # Configuration defaults
 CONFIG_START_NETWORK ?= y
