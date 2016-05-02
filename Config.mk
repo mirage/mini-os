@@ -27,11 +27,11 @@ cc-option = $(shell if test -z "`echo 'void*p=1;' | \
 # stubdom, some XEN_ variables are set, set MINIOS_ variables accordingly.
 #
 ifneq ($(XEN_ROOT),)
-MINI-OS_ROOT=$(XEN_ROOT)/extras/mini-os
+MINIOS_ROOT=$(XEN_ROOT)/extras/mini-os
 else
-MINI-OS_ROOT=$(TOPLEVEL_DIR)
+MINIOS_ROOT=$(TOPLEVEL_DIR)
 endif
-export MINI-OS_ROOT
+export MINIOS_ROOT
 
 ifneq ($(XEN_TARGET_ARCH),)
 MINIOS_TARGET_ARCH = $(XEN_TARGET_ARCH)
@@ -78,16 +78,16 @@ EXTRA_INC = $(ARCH_INC)
 
 # Include the architecture family's special makerules.
 # This must be before include minios.mk!
-include $(MINI-OS_ROOT)/$(TARGET_ARCH_DIR)/arch.mk
+include $(MINIOS_ROOT)/$(TARGET_ARCH_DIR)/arch.mk
 
-extra_incl := $(foreach dir,$(EXTRA_INC),-isystem $(MINI-OS_ROOT)/include/$(dir))
+extra_incl := $(foreach dir,$(EXTRA_INC),-isystem $(MINIOS_ROOT)/include/$(dir))
 
-DEF_CPPFLAGS += -isystem $(MINI-OS_ROOT)/include
+DEF_CPPFLAGS += -isystem $(MINIOS_ROOT)/include
 DEF_CPPFLAGS += -D__MINIOS__
 
 ifeq ($(libc),y)
 DEF_CPPFLAGS += -DHAVE_LIBC
-DEF_CPPFLAGS += -isystem $(MINI-OS_ROOT)/include/posix
+DEF_CPPFLAGS += -isystem $(MINIOS_ROOT)/include/posix
 DEF_CPPFLAGS += -isystem $(XEN_ROOT)/tools/xenstore/include
 endif
 
