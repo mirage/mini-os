@@ -634,6 +634,7 @@ int closedir(DIR *dir)
 
 /* We assume that only the main thread calls select(). */
 
+#if defined(LIBC_DEBUG) || defined(LIBC_VERBOSE)
 static const char file_types[] = {
     [FTYPE_NONE]	= 'N',
     [FTYPE_CONSOLE]	= 'C',
@@ -646,6 +647,7 @@ static const char file_types[] = {
     [FTYPE_KBD]		= 'K',
     [FTYPE_FB]		= 'G',
 };
+#endif
 #ifdef LIBC_DEBUG
 static void dump_set(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
 {
