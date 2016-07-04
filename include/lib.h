@@ -66,11 +66,6 @@
 #ifdef HAVE_LIBC
 #include <sys/queue.h>
 #include <stdio.h>
-#else
-#include <lib-gpl.h>
-#endif
-
-#ifdef HAVE_LIBC
 #include <string.h>
 #else
 /* string and memory manipulation */
@@ -107,6 +102,28 @@ char *strrchr(const char *p, int ch);
 void	*memcpy(void *to, const void *from, size_t len);
 
 size_t strnlen(const char *, size_t);
+
+unsigned long strtoul(const char *nptr, char **endptr, int base);
+int64_t strtoq(const char *nptr, char **endptr, int base);
+uint64_t strtouq(const char *nptr, char **endptr, int base);
+
+extern int sprintf(char * buf, const char * fmt, ...)
+        __attribute__ ((format (printf, 2, 3)));
+extern int vsprintf(char *buf, const char *, va_list)
+        __attribute__ ((format (printf, 2, 0)));
+extern int snprintf(char * buf, size_t size, const char * fmt, ...)
+        __attribute__ ((format (printf, 3, 4)));
+extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+        __attribute__ ((format (printf, 3, 0)));
+extern int scnprintf(char * buf, size_t size, const char * fmt, ...)
+        __attribute__ ((format (printf, 3, 4)));
+extern int vscnprintf(char *buf, size_t size, const char *fmt, va_list args)
+        __attribute__ ((format (printf, 3, 0)));
+extern int sscanf(const char *, const char *, ...)
+        __attribute__ ((format (scanf, 2, 3)));
+extern int vsscanf(const char *, const char *, va_list)
+        __attribute__ ((format (scanf, 2, 0)));
+
 #endif
 
 #include <mini-os/console.h>

@@ -52,10 +52,6 @@
 #include <mini-os/wait.h>
 
 
-#ifndef HAVE_LIBC
-#define strtoul simple_strtoul
-#endif
-
 //#define TPMBACK_PRINT_DEBUG
 #ifdef TPMBACK_PRINT_DEBUG
 #define TPMBACK_DEBUG(fmt,...) printk("Tpmback:Debug("__FILE__":%d) " fmt, __LINE__, ##__VA_ARGS__)
