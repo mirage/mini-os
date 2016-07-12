@@ -867,9 +867,8 @@ void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p)
     printk("stack start: %p(VA)\n", stack);
     printk("       _end: %p(VA)\n", &_end);
 
-    /* First page follows page table pages and 3 more pages (store page etc) */
-    start_pfn = PFN_UP(to_phys(start_info.pt_base)) + 
-        start_info.nr_pt_frames + 3;
+    /* First page follows page table pages. */
+    start_pfn = PFN_UP(to_phys(start_info.pt_base)) + start_info.nr_pt_frames;
     max_pfn = start_info.nr_pages;
 
     /* We need room for demand mapping and heap, clip available memory */
