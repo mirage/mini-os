@@ -42,6 +42,7 @@
 #define STACK_SIZE_PAGE_ORDER __STACK_SIZE_PAGE_ORDER
 #define STACK_SIZE __STACK_SIZE
 
+extern unsigned long nr_free_pages;
 
 void init_mm(void);
 unsigned long alloc_pages(int order);

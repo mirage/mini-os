@@ -53,6 +53,8 @@ static unsigned long *alloc_bitmap;
 #define allocated_in_map(_pn) \
 (alloc_bitmap[(_pn)/PAGES_PER_MAPWORD] & (1UL<<((_pn)&(PAGES_PER_MAPWORD-1))))
 
+unsigned long nr_free_pages;
+
 /*
  * Hint regarding bitwise arithmetic in map_{alloc,free}:
  *  -(1<<n)  sets all bits >= n. 
@@ -81,6 +83,8 @@ static void map_alloc(unsigned long first_page, unsigned long nr_pages)
         while ( ++curr_idx < end_idx ) alloc_bitmap[curr_idx] = ~0UL;
         alloc_bitmap[curr_idx] |= (1UL<<end_off)-1;
     }
+
+    nr_free_pages -= nr_pages;
 }
 
 
@@ -92,6 +96,8 @@ static void map_free(unsigned long first_page, unsigned long nr_pages)
     start_off = first_page & (PAGES_PER_MAPWORD-1);
     end_idx   = (first_page + nr_pages) / PAGES_PER_MAPWORD;
     end_off   = (first_page + nr_pages) & (PAGES_PER_MAPWORD-1);
+
+    nr_free_pages += nr_pages;
 
     if ( curr_idx == end_idx )
     {
