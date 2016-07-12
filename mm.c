@@ -42,13 +42,6 @@
 #include <mini-os/lib.h>
 #include <mini-os/xmalloc.h>
 
-#ifdef MM_DEBUG
-#define DEBUG(_f, _a...) \
-    printk("MINI_OS(file=mm.c, line=%d) " _f "\n", __LINE__, ## _a)
-#else
-#define DEBUG(_f, _a...)    ((void)0)
-#endif
-
 /*********************
  * ALLOCATION BITMAP
  *  One bit per page of memory. Bit set => page is allocated.
@@ -139,59 +132,6 @@ static chunk_head_t  free_tail[FREELIST_SIZE];
 
 #define round_pgdown(_p)  ((_p)&PAGE_MASK)
 #define round_pgup(_p)    (((_p)+(PAGE_SIZE-1))&PAGE_MASK)
-
-#ifdef MM_DEBUG
-/*
- * Prints allocation[0/1] for @nr_pages, starting at @start
- * address (virtual).
- */
-USED static void print_allocation(void *start, int nr_pages)
-{
-    unsigned long pfn_start = virt_to_pfn(start);
-    int count;
-    for(count = 0; count < nr_pages; count++)
-        if(allocated_in_map(pfn_start + count)) printk("1");
-        else printk("0");
-        
-    printk("\n");        
-}
-
-/*
- * Prints chunks (making them with letters) for @nr_pages starting
- * at @start (virtual).
- */
-USED static void print_chunks(void *start, int nr_pages)
-{
-    char chunks[1001], current='A';
-    int order, count;
-    chunk_head_t *head;
-    unsigned long pfn_start = virt_to_pfn(start);
-   
-    memset(chunks, (int)'_', 1000);
-    if(nr_pages > 1000) 
-    {
-        DEBUG("Can only pring 1000 pages. Increase buffer size.");
-    }
-    
-    for(order=0; order < FREELIST_SIZE; order++)
-    {
-        head = free_head[order];
-        while(!FREELIST_EMPTY(head))
-        {
-            for(count = 0; count < 1UL<< head->level; count++)
-            {
-                if(count + virt_to_pfn(head) - pfn_start < 1000)
-                    chunks[count + virt_to_pfn(head) - pfn_start] = current;
-            }
-            head = head->next;
-            current++;
-        }
-    }
-    chunks[nr_pages] = '\0';
-    printk("%s\n", chunks);
-}
-#endif
-
 
 /*
  * Initialise allocator, placing addresses [@min,@max] in free pool.
