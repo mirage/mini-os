@@ -36,6 +36,26 @@
 #endif
 #endif
 
+/*
+ * Physical address space usage:
+ *
+ * 0..._edata: kernel text/data
+ * *stack    : kernel stack (thread 0)
+ * hypervisor allocated data: p2m_list, start_info page, xenstore page,
+ *                            console page, initial page tables
+ * bitmap of allocated pages
+ * pages controlled by the page allocator
+ *
+ *
+ * Virtual address space usage:
+ *
+ * 1:1 mapping of physical memory starting at VA(0)
+ * 1 unallocated page
+ * demand map area (32 bits: 2 GB, 64 bits: 128 GB) for virtual allocations
+ * 1 unallocated page
+ * with libc: heap area (32 bits: 1 GB, 64 bits: 128 GB)
+ */
+
 #define L1_FRAME                1
 #define L2_FRAME                2
 #define L3_FRAME                3
