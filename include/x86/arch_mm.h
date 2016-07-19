@@ -49,11 +49,13 @@
  *
  * Virtual address space usage:
  *
- * 1:1 mapping of physical memory starting at VA(0)
- * 1 unallocated page
- * demand map area (32 bits: 2 GB, 64 bits: 128 GB) for virtual allocations
- * 1 unallocated page
- * with libc: heap area (32 bits: 1 GB, 64 bits: 128 GB)
+ *  area                           x86-64               x86-32
+ *  ------------------------------------------------------------
+ *  mapped physical memory       00000000             00000000
+ *  kernel virtual mappings    8000000000             3f000000
+ *  demand mappings          100000000000             40000000
+ *  heap (with libc only)    200000000000             b0000000
+ *
  */
 
 #define L1_FRAME                1
@@ -81,6 +83,15 @@
 typedef uint64_t pgentry_t;
 #endif
 
+#define MAX_MEM_SIZE            0x3f000000UL
+#define VIRT_KERNEL_AREA        0x3f000000UL
+#define VIRT_DEMAND_AREA        0x40000000UL
+#define VIRT_HEAP_AREA          0xb0000000UL
+
+#define DEMAND_MAP_PAGES        0x6ffffUL
+#define HEAP_PAGES_MAX          ((HYPERVISOR_VIRT_START - VIRT_HEAP_AREA) / \
+                                 PAGE_SIZE - 1)
+
 #elif defined(__x86_64__)
 
 #define L2_PAGETABLE_SHIFT      21
@@ -106,6 +117,20 @@ typedef uint64_t pgentry_t;
 typedef unsigned long pgentry_t;
 #endif
 
+#define MAX_MEM_SIZE            (512ULL << 30)
+#define VIRT_KERNEL_AREA        0x0000008000000000UL
+#define VIRT_DEMAND_AREA        0x0000100000000000UL
+#define VIRT_HEAP_AREA          0x0000200000000000UL
+
+#define DEMAND_MAP_PAGES        0x8000000UL
+#define HEAP_PAGES_MAX          0x8000000UL
+
+#endif
+
+#ifndef HAVE_LIBC
+#define HEAP_PAGES 0
+#else
+#define HEAP_PAGES   HEAP_PAGES_MAX
 #endif
 
 #define L1_MASK  ((1UL << L2_PAGETABLE_SHIFT) - 1)

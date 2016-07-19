@@ -442,37 +442,21 @@ pgentry_t *need_pgt(unsigned long va)
  * Reserve an area of virtual address space for mappings and Heap
  */
 static unsigned long demand_map_area_start;
-#ifdef __x86_64__
-#define DEMAND_MAP_PAGES ((128ULL << 30) / PAGE_SIZE)
-#else
-#define DEMAND_MAP_PAGES ((2ULL << 30) / PAGE_SIZE)
-#endif
-
-#ifndef HAVE_LIBC
-#define HEAP_PAGES 0
-#else
+static unsigned long demand_map_area_end;
+#ifdef HAVE_LIBC
 unsigned long heap, brk, heap_mapped, heap_end;
-#ifdef __x86_64__
-#define HEAP_PAGES ((128ULL << 30) / PAGE_SIZE)
-#else
-#define HEAP_PAGES ((1ULL << 30) / PAGE_SIZE)
-#endif
 #endif
 
-void arch_init_demand_mapping_area(unsigned long cur_pfn)
+void arch_init_demand_mapping_area(void)
 {
-    cur_pfn++;
-
-    demand_map_area_start = (unsigned long) pfn_to_virt(cur_pfn);
-    cur_pfn += DEMAND_MAP_PAGES;
-    printk("Demand map pfns at %lx-%p.\n", 
-           demand_map_area_start, pfn_to_virt(cur_pfn));
+    demand_map_area_start = VIRT_DEMAND_AREA;
+    demand_map_area_end = demand_map_area_start + DEMAND_MAP_PAGES * PAGE_SIZE;
+    printk("Demand map pfns at %lx-%lx.\n", demand_map_area_start,
+           demand_map_area_end);
 
 #ifdef HAVE_LIBC
-    cur_pfn++;
-    heap_mapped = brk = heap = (unsigned long) pfn_to_virt(cur_pfn);
-    cur_pfn += HEAP_PAGES;
-    heap_end = (unsigned long) pfn_to_virt(cur_pfn);
+    heap_mapped = brk = heap = VIRT_HEAP_AREA;
+    heap_end = heap_mapped + HEAP_PAGES * PAGE_SIZE;
     printk("Heap resides at %lx-%lx.\n", brk, heap_end);
 #endif
 }
@@ -729,14 +713,8 @@ void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p)
     start_pfn = PFN_UP(to_phys(start_info.pt_base)) + start_info.nr_pt_frames;
     max_pfn = start_info.nr_pages;
 
-    /* We need room for demand mapping and heap, clip available memory */
-#if defined(__i386__)
-    {
-        unsigned long virt_pfns = 1 + DEMAND_MAP_PAGES + 1 + HEAP_PAGES;
-        if (max_pfn + virt_pfns >= 0x100000)
-            max_pfn = 0x100000 - virt_pfns - 1;
-    }
-#endif
+    if ( max_pfn >= MAX_MEM_SIZE / PAGE_SIZE )
+        max_pfn = MAX_MEM_SIZE / PAGE_SIZE - 1;
 
     printk("  start_pfn: %lx\n", start_pfn);
     printk("    max_pfn: %lx\n", max_pfn);
