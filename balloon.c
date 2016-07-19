@@ -21,4 +21,26 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <mini-os/os.h>
 #include <mini-os/balloon.h>
+#include <mini-os/lib.h>
+#include <xen/xen.h>
+#include <xen/memory.h>
+
+unsigned long nr_max_pages;
+
+void get_max_pages(void)
+{
+    long ret;
+    domid_t domid = DOMID_SELF;
+
+    ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
+    if ( ret < 0 )
+    {
+        printk("Could not get maximum pfn\n");
+        return;
+    }
+
+    nr_max_pages = ret;
+    printk("Maximum memory size: %ld pages\n", nr_max_pages);
+}

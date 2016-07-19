@@ -26,7 +26,13 @@
 
 #ifdef CONFIG_BALLOON
 
+extern unsigned long nr_max_pages;
+
+void get_max_pages(void);
+
 #else /* CONFIG_BALLOON */
+
+static inline void get_max_pages(void) { }
 
 #endif /* CONFIG_BALLOON */
 #endif /* _BALLOON_H_ */
