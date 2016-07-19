@@ -33,6 +33,7 @@ CONFIG_CONSFRONT ?= y
 CONFIG_XENBUS ?= y
 CONFIG_XC ?=y
 CONFIG_LWIP ?= $(lwip)
+CONFIG_BALLOON ?= n
 
 # Export config items as compiler directives
 flags-$(CONFIG_START_NETWORK) += -DCONFIG_START_NETWORK
@@ -48,6 +49,7 @@ flags-$(CONFIG_KBDFRONT) += -DCONFIG_KBDFRONT
 flags-$(CONFIG_FBFRONT) += -DCONFIG_FBFRONT
 flags-$(CONFIG_CONSFRONT) += -DCONFIG_CONSFRONT
 flags-$(CONFIG_XENBUS) += -DCONFIG_XENBUS
+flags-$(CONFIG_BALLOON) += -DCONFIG_BALLOON
 
 DEF_CFLAGS += $(flags-y)
 
@@ -96,6 +98,7 @@ src-$(CONFIG_NETFRONT) += netfront.c
 src-$(CONFIG_PCIFRONT) += pcifront.c
 src-y += sched.c
 src-$(CONFIG_TEST) += test.c
+src-$(CONFIG_BALLOON) += balloon.c
 
 src-y += lib/ctype.c
 src-y += lib/math.c
