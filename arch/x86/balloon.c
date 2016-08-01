@@ -21,8 +21,33 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <mini-os/os.h>
 #include <mini-os/balloon.h>
+#include <mini-os/lib.h>
+#include <mini-os/mm.h>
 
 #ifdef CONFIG_BALLOON
+
+unsigned long virt_kernel_area_end = VIRT_KERNEL_AREA;
+
+void arch_remap_p2m(unsigned long max_pfn)
+{
+    unsigned long pfn;
+
+    if ( p2m_pages(nr_max_pages) <= p2m_pages(max_pfn) )
+        return;
+
+    for ( pfn = 0; pfn < max_pfn; pfn += P2M_ENTRIES )
+    {
+        map_frame_rw(virt_kernel_area_end + PAGE_SIZE * (pfn / P2M_ENTRIES),
+                     virt_to_mfn(phys_to_machine_mapping + pfn));
+    }
+
+    phys_to_machine_mapping = (unsigned long *)virt_kernel_area_end;
+    printk("remapped p2m list to %p\n", phys_to_machine_mapping);
+
+    virt_kernel_area_end += PAGE_SIZE * p2m_pages(nr_max_pages);
+    ASSERT(virt_kernel_area_end <= VIRT_DEMAND_AREA);
+}
 
 #endif

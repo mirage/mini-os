@@ -25,4 +25,6 @@
 
 #ifdef CONFIG_BALLOON
 
+unsigned long virt_kernel_area_end;   /* TODO: find a virtual area */
+
 #endif

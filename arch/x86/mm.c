@@ -37,6 +37,7 @@
 #include <mini-os/errno.h>
 #include <mini-os/os.h>
 #include <mini-os/hypervisor.h>
+#include <mini-os/balloon.h>
 #include <mini-os/mm.h>
 #include <mini-os/types.h>
 #include <mini-os/lib.h>
@@ -626,6 +627,8 @@ void arch_init_p2m(unsigned long max_pfn)
     HYPERVISOR_shared_info->arch.pfn_to_mfn_frame_list_list = 
         virt_to_mfn(l3_list);
     HYPERVISOR_shared_info->arch.max_pfn = max_pfn;
+
+    arch_remap_p2m(max_pfn);
 }
 
 void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p)

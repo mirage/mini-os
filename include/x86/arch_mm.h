@@ -198,6 +198,10 @@ static inline void p2m_chk_pfn(unsigned long pfn)
         do_exit();
     }
 }
+static inline unsigned long p2m_pages(unsigned long pages)
+{
+    return (pages + P2M_ENTRIES - 1) >> L1_P2M_SHIFT;
+}
 
 #include "arch_limits.h"
 #define PAGE_SIZE       __PAGE_SIZE

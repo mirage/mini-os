@@ -27,12 +27,15 @@
 #ifdef CONFIG_BALLOON
 
 extern unsigned long nr_max_pages;
+extern unsigned long virt_kernel_area_end;
 
 void get_max_pages(void);
+void arch_remap_p2m(unsigned long max_pfn);
 
 #else /* CONFIG_BALLOON */
 
 static inline void get_max_pages(void) { }
+static inline void arch_remap_p2m(unsigned long max_pfn) { }
 
 #endif /* CONFIG_BALLOON */
 #endif /* _BALLOON_H_ */
