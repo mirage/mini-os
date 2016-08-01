@@ -625,11 +625,11 @@ void arch_init_p2m(unsigned long max_pfn)
 #define L2_P2M_MASK     (L2_P2M_ENTRIES - 1)    
 #define L3_P2M_MASK     (L3_P2M_ENTRIES - 1)    
     
-    unsigned long *l1_list = NULL, *l2_list = NULL, *l3_list;
+    unsigned long *l2_list = NULL, *l3_list;
     unsigned long pfn;
     
     l3_list = (unsigned long *)alloc_page(); 
-    for ( pfn=0; pfn<max_pfn; pfn++ )
+    for ( pfn = 0; pfn < max_pfn; pfn += L1_P2M_ENTRIES )
     {
         if ( !(pfn % (L1_P2M_ENTRIES * L2_P2M_ENTRIES)) )
         {
@@ -641,14 +641,8 @@ void arch_init_p2m(unsigned long max_pfn)
             }
             l3_list[(pfn >> L2_P2M_SHIFT)] = virt_to_mfn(l2_list);  
         }
-        if ( !(pfn % (L1_P2M_ENTRIES)) )
-        {
-            l1_list = (unsigned long*)alloc_page();
-            l2_list[(pfn >> L1_P2M_SHIFT) & L2_P2M_MASK] = 
-                virt_to_mfn(l1_list); 
-        }
-
-        l1_list[pfn & L1_P2M_MASK] = pfn_to_mfn(pfn); 
+        l2_list[(pfn >> L1_P2M_SHIFT) & L2_P2M_MASK] =
+            virt_to_mfn(phys_to_machine_mapping + pfn);
     }
     HYPERVISOR_shared_info->arch.pfn_to_mfn_frame_list_list = 
         virt_to_mfn(l3_list);
