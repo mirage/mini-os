@@ -48,11 +48,14 @@
  *  One bit per page of memory. Bit set => page is allocated.
  */
 
-static unsigned long *alloc_bitmap;
+unsigned long *mm_alloc_bitmap;
+unsigned long mm_alloc_bitmap_size;
+
 #define PAGES_PER_MAPWORD (sizeof(unsigned long) * 8)
 
 #define allocated_in_map(_pn) \
-(alloc_bitmap[(_pn)/PAGES_PER_MAPWORD] & (1UL<<((_pn)&(PAGES_PER_MAPWORD-1))))
+    (mm_alloc_bitmap[(_pn) / PAGES_PER_MAPWORD] & \
+     (1UL << ((_pn) & (PAGES_PER_MAPWORD - 1))))
 
 unsigned long nr_free_pages;
 
@@ -61,8 +64,8 @@ unsigned long nr_free_pages;
  *  -(1<<n)  sets all bits >= n. 
  *  (1<<n)-1 sets all bits <  n.
  * Variable names in map_{alloc,free}:
- *  *_idx == Index into `alloc_bitmap' array.
- *  *_off == Bit offset within an element of the `alloc_bitmap' array.
+ *  *_idx == Index into `mm_alloc_bitmap' array.
+ *  *_off == Bit offset within an element of the `mm_alloc_bitmap' array.
  */
 
 static void map_alloc(unsigned long first_page, unsigned long nr_pages)
@@ -76,13 +79,13 @@ static void map_alloc(unsigned long first_page, unsigned long nr_pages)
 
     if ( curr_idx == end_idx )
     {
-        alloc_bitmap[curr_idx] |= ((1UL<<end_off)-1) & -(1UL<<start_off);
+        mm_alloc_bitmap[curr_idx] |= ((1UL<<end_off)-1) & -(1UL<<start_off);
     }
     else 
     {
-        alloc_bitmap[curr_idx] |= -(1UL<<start_off);
-        while ( ++curr_idx < end_idx ) alloc_bitmap[curr_idx] = ~0UL;
-        alloc_bitmap[curr_idx] |= (1UL<<end_off)-1;
+        mm_alloc_bitmap[curr_idx] |= -(1UL<<start_off);
+        while ( ++curr_idx < end_idx ) mm_alloc_bitmap[curr_idx] = ~0UL;
+        mm_alloc_bitmap[curr_idx] |= (1UL<<end_off)-1;
     }
 
     nr_free_pages -= nr_pages;
@@ -102,13 +105,13 @@ static void map_free(unsigned long first_page, unsigned long nr_pages)
 
     if ( curr_idx == end_idx )
     {
-        alloc_bitmap[curr_idx] &= -(1UL<<end_off) | ((1UL<<start_off)-1);
+        mm_alloc_bitmap[curr_idx] &= -(1UL<<end_off) | ((1UL<<start_off)-1);
     }
     else 
     {
-        alloc_bitmap[curr_idx] &= (1UL<<start_off)-1;
-        while ( ++curr_idx != end_idx ) alloc_bitmap[curr_idx] = 0;
-        alloc_bitmap[curr_idx] &= -(1UL<<end_off);
+        mm_alloc_bitmap[curr_idx] &= (1UL<<start_off)-1;
+        while ( ++curr_idx != end_idx ) mm_alloc_bitmap[curr_idx] = 0;
+        mm_alloc_bitmap[curr_idx] &= -(1UL<<end_off);
     }
 }
 
@@ -137,9 +140,6 @@ static chunk_head_t *free_head[FREELIST_SIZE];
 static chunk_head_t  free_tail[FREELIST_SIZE];
 #define FREELIST_EMPTY(_l) ((_l)->next == NULL)
 
-#define round_pgdown(_p)  ((_p)&PAGE_MASK)
-#define round_pgup(_p)    (((_p)+(PAGE_SIZE-1))&PAGE_MASK)
-
 /*
  * Initialise allocator, placing addresses [@min,@max] in free pool.
  * @min and @max are PHYSICAL addresses.
@@ -147,7 +147,7 @@ static chunk_head_t  free_tail[FREELIST_SIZE];
 static void init_page_allocator(unsigned long min, unsigned long max)
 {
     int i;
-    unsigned long range, bitmap_size;
+    unsigned long range;
     chunk_head_t *ch;
     chunk_tail_t *ct;
     for ( i = 0; i < FREELIST_SIZE; i++ )
@@ -161,14 +161,14 @@ static void init_page_allocator(unsigned long min, unsigned long max)
     max = round_pgdown(max);
 
     /* Allocate space for the allocation bitmap. */
-    bitmap_size  = (max+1) >> (PAGE_SHIFT+3);
-    bitmap_size  = round_pgup(bitmap_size);
-    alloc_bitmap = (unsigned long *)to_virt(min);
-    min         += bitmap_size;
+    mm_alloc_bitmap_size  = (max + 1) >> (PAGE_SHIFT + 3);
+    mm_alloc_bitmap_size  = round_pgup(mm_alloc_bitmap_size);
+    mm_alloc_bitmap = (unsigned long *)to_virt(min);
+    min         += mm_alloc_bitmap_size;
     range        = max - min;
 
     /* All allocated by default. */
-    memset(alloc_bitmap, ~0, bitmap_size);
+    memset(mm_alloc_bitmap, ~0, mm_alloc_bitmap_size);
     /* Free up the memory we've been given to play with. */
     map_free(PHYS_PFN(min), range>>PAGE_SHIFT);
 
@@ -198,6 +198,8 @@ static void init_page_allocator(unsigned long min, unsigned long max)
         free_head[i]    = ch;
         ct->level       = i;
     }
+
+    mm_alloc_bitmap_remap();
 }
 
 

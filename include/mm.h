@@ -42,7 +42,13 @@
 #define STACK_SIZE_PAGE_ORDER __STACK_SIZE_PAGE_ORDER
 #define STACK_SIZE __STACK_SIZE
 
+#define round_pgdown(_p)  ((_p) & PAGE_MASK)
+#define round_pgup(_p)    (((_p) + (PAGE_SIZE - 1)) & PAGE_MASK)
+
 extern unsigned long nr_free_pages;
+
+extern unsigned long *mm_alloc_bitmap;
+extern unsigned long mm_alloc_bitmap_size;
 
 void init_mm(void);
 unsigned long alloc_pages(int order);

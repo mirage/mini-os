@@ -44,3 +44,21 @@ void get_max_pages(void)
     nr_max_pages = ret;
     printk("Maximum memory size: %ld pages\n", nr_max_pages);
 }
+
+void mm_alloc_bitmap_remap(void)
+{
+    unsigned long i;
+
+    if ( mm_alloc_bitmap_size >= ((nr_max_pages + 1) >> (PAGE_SHIFT + 3)) )
+        return;
+
+    for ( i = 0; i < mm_alloc_bitmap_size; i += PAGE_SIZE )
+    {
+        map_frame_rw(virt_kernel_area_end + i,
+                     virt_to_mfn((unsigned long)(mm_alloc_bitmap) + i));
+    }
+
+    mm_alloc_bitmap = (unsigned long *)virt_kernel_area_end;
+    virt_kernel_area_end += round_pgup((nr_max_pages + 1) >> (PAGE_SHIFT + 3));
+    ASSERT(virt_kernel_area_end <= VIRT_DEMAND_AREA);
+}
