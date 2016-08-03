@@ -302,61 +302,6 @@ static void set_readonly(void *text, void *etext)
 }
 
 /*
- * A useful mem testing function. Write the address to every address in the
- * range provided and read back the value. If verbose, print page walk to
- * some VA
- * 
- * If we get MEM_TEST_MAX_ERRORS we might as well stop
- */
-#define MEM_TEST_MAX_ERRORS 10 
-int mem_test(unsigned long *start_va, unsigned long *end_va, int verbose)
-{
-    unsigned long mask = 0x10000;
-    unsigned long *pointer;
-    int error_count = 0;
- 
-    /* write values and print page walks */
-    if ( verbose && (((unsigned long)start_va) & 0xfffff) )
-    {
-        printk("MemTest Start: 0x%p\n", start_va);
-        page_walk((unsigned long)start_va);
-    }
-    for ( pointer = start_va; pointer < end_va; pointer++ )
-    {
-        if ( verbose && !(((unsigned long)pointer) & 0xfffff) )
-        {
-            printk("Writing to %p\n", pointer);
-            page_walk((unsigned long)pointer);
-        }
-        *pointer = (unsigned long)pointer & ~mask;
-    }
-    if ( verbose && (((unsigned long)end_va) & 0xfffff) )
-    {
-        printk("MemTest End: %p\n", end_va-1);
-        page_walk((unsigned long)end_va-1);
-    }
- 
-    /* verify values */
-    for ( pointer = start_va; pointer < end_va; pointer++ )
-    {
-        if ( ((unsigned long)pointer & ~mask) != *pointer )
-        {
-            printk("Read error at 0x%lx. Read: 0x%lx, should read 0x%lx\n",
-                   (unsigned long)pointer, *pointer, 
-                   ((unsigned long)pointer & ~mask));
-            error_count++;
-            if ( error_count >= MEM_TEST_MAX_ERRORS )
-            {
-                printk("mem_test: too many errors\n");
-                return -1;
-            }
-        }
-    }
-    return 0;
-}
-
-
-/*
  * get the PTE for virtual address va if it exists. Otherwise NULL.
  */
 static pgentry_t *get_pgt(unsigned long va)
