@@ -23,11 +23,13 @@
 
 #include <mini-os/os.h>
 #include <mini-os/balloon.h>
+#include <mini-os/errno.h>
 #include <mini-os/lib.h>
 #include <xen/xen.h>
 #include <xen/memory.h>
 
 unsigned long nr_max_pages;
+unsigned long nr_mem_pages;
 
 void get_max_pages(void)
 {
@@ -61,4 +63,66 @@ void mm_alloc_bitmap_remap(void)
     mm_alloc_bitmap = (unsigned long *)virt_kernel_area_end;
     virt_kernel_area_end += round_pgup((nr_max_pages + 1) >> (PAGE_SHIFT + 3));
     ASSERT(virt_kernel_area_end <= VIRT_DEMAND_AREA);
+}
+
+#define N_BALLOON_FRAMES 64
+static unsigned long balloon_frames[N_BALLOON_FRAMES];
+
+int balloon_up(unsigned long n_pages)
+{
+    unsigned long page, pfn;
+    int rc;
+    struct xen_memory_reservation reservation = {
+        .address_bits = 0,
+        .extent_order = 0,
+        .domid        = DOMID_SELF
+    };
+
+    if ( n_pages > nr_max_pages - nr_mem_pages )
+        n_pages = nr_max_pages - nr_mem_pages;
+    if ( n_pages > N_BALLOON_FRAMES )
+        n_pages = N_BALLOON_FRAMES;
+
+    /* Resize alloc_bitmap if necessary. */
+    while ( mm_alloc_bitmap_size * 8 < nr_mem_pages + n_pages )
+    {
+        page = alloc_page();
+        if ( !page )
+            return -ENOMEM;
+
+        memset((void *)page, ~0, PAGE_SIZE);
+        if ( map_frame_rw((unsigned long)mm_alloc_bitmap + mm_alloc_bitmap_size,
+                          virt_to_mfn(page)) )
+        {
+            free_page((void *)page);
+            return -ENOMEM;
+        }
+
+        mm_alloc_bitmap_size += PAGE_SIZE;
+    }
+
+    rc = arch_expand_p2m(nr_mem_pages + n_pages);
+    if ( rc )
+        return rc;
+
+    /* Get new memory from hypervisor. */
+    for ( pfn = 0; pfn < n_pages; pfn++ )
+    {
+        balloon_frames[pfn] = nr_mem_pages + pfn;
+    }
+    set_xen_guest_handle(reservation.extent_start, balloon_frames);
+    reservation.nr_extents = n_pages;
+    rc = HYPERVISOR_memory_op(XENMEM_populate_physmap, &reservation);
+    if ( rc <= 0 )
+        return rc;
+
+    for ( pfn = 0; pfn < rc; pfn++ )
+    {
+        arch_pfn_add(nr_mem_pages + pfn, balloon_frames[pfn]);
+        free_page(pfn_to_virt(nr_mem_pages + pfn));
+    }
+
+    nr_mem_pages += rc;
+
+    return rc;
 }

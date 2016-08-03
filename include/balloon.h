@@ -28,10 +28,15 @@
 
 extern unsigned long nr_max_pages;
 extern unsigned long virt_kernel_area_end;
+extern unsigned long nr_mem_pages;
 
 void get_max_pages(void);
+int balloon_up(unsigned long n_pages);
+
 void arch_remap_p2m(unsigned long max_pfn);
 void mm_alloc_bitmap_remap(void);
+int arch_expand_p2m(unsigned long max_pfn);
+void arch_pfn_add(unsigned long pfn, unsigned long mfn);
 
 #else /* CONFIG_BALLOON */
 

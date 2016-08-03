@@ -383,6 +383,10 @@ void init_mm(void)
     arch_init_p2m(max_pfn);
     
     arch_init_demand_mapping_area();
+
+#ifdef CONFIG_BALLOON
+    nr_mem_pages = max_pfn;
+#endif
 }
 
 void fini_mm(void)

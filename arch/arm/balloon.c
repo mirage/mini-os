@@ -27,4 +27,13 @@
 
 unsigned long virt_kernel_area_end;   /* TODO: find a virtual area */
 
+int arch_expand_p2m(unsigned long max_pfn)
+{
+    return 0;
+}
+
+void arch_pfn_add(unsigned long pfn, unsigned long mfn)
+{
+}
+
 #endif
