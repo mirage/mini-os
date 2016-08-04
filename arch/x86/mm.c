@@ -34,6 +34,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <mini-os/errno.h>
 #include <mini-os/os.h>
 #include <mini-os/hypervisor.h>
 #include <mini-os/mm.h>
@@ -354,6 +355,8 @@ pgentry_t *need_pgt(unsigned long va)
     if ( !(tab[offset] & _PAGE_PRESENT) )
     {
         pt_pfn = virt_to_pfn(alloc_page());
+        if ( !pt_pfn )
+            return NULL;
         new_pt_frame(&pt_pfn, pt_mfn, offset, L3_FRAME);
     }
     ASSERT(tab[offset] & _PAGE_PRESENT);
@@ -364,6 +367,8 @@ pgentry_t *need_pgt(unsigned long va)
     if ( !(tab[offset] & _PAGE_PRESENT) ) 
     {
         pt_pfn = virt_to_pfn(alloc_page());
+        if ( !pt_pfn )
+            return NULL;
         new_pt_frame(&pt_pfn, pt_mfn, offset, L2_FRAME);
     }
     ASSERT(tab[offset] & _PAGE_PRESENT);
@@ -373,6 +378,8 @@ pgentry_t *need_pgt(unsigned long va)
     if ( !(tab[offset] & _PAGE_PRESENT) )
     {
         pt_pfn = virt_to_pfn(alloc_page());
+        if ( !pt_pfn )
+            return NULL;
         new_pt_frame(&pt_pfn, pt_mfn, offset, L1_FRAME);
     }
     ASSERT(tab[offset] & _PAGE_PRESENT);
@@ -445,10 +452,10 @@ unsigned long allocate_ondemand(unsigned long n, unsigned long alignment)
  * va. map f[i*stride]+i*increment for i in 0..n-1.
  */
 #define MAP_BATCH ((STACK_SIZE / 2) / sizeof(mmu_update_t))
-void do_map_frames(unsigned long va,
-                   const unsigned long *mfns, unsigned long n, 
-                   unsigned long stride, unsigned long incr, 
-                   domid_t id, int *err, unsigned long prot)
+int do_map_frames(unsigned long va,
+                  const unsigned long *mfns, unsigned long n,
+                  unsigned long stride, unsigned long incr,
+                  domid_t id, int *err, unsigned long prot)
 {
     pgentry_t *pgt = NULL;
     unsigned long done = 0;
@@ -458,7 +465,7 @@ void do_map_frames(unsigned long va,
     if ( !mfns ) 
     {
         printk("do_map_frames: no mfns supplied\n");
-        return;
+        return -EINVAL;
     }
     DEBUG("va=%p n=0x%lx, mfns[0]=0x%lx stride=0x%lx incr=0x%lx prot=0x%lx\n",
           va, n, mfns[0], stride, incr, prot);
@@ -484,7 +491,9 @@ void do_map_frames(unsigned long va,
             {
                 if ( !pgt || !(va & L1_MASK) )
                     pgt = need_pgt(va);
-                
+                if ( !pgt )
+                    return -ENOMEM;
+
                 mmu_updates[i].ptr = virt_to_mach(pgt) | MMU_NORMAL_PT_UPDATE;
                 mmu_updates[i].val = ((pgentry_t)(mfns[(done + i) * stride] +
                                                   (done + i) * incr)
@@ -505,6 +514,8 @@ void do_map_frames(unsigned long va,
         }
         done += todo;
     }
+
+    return 0;
 }
 
 /*
@@ -521,7 +532,8 @@ void *map_frames_ex(const unsigned long *mfns, unsigned long n,
     if ( !va )
         return NULL;
 
-    do_map_frames(va, mfns, n, stride, incr, id, err, prot);
+    if ( do_map_frames(va, mfns, n, stride, incr, id, err, prot) )
+        return NULL;
 
     return (void *)va;
 }

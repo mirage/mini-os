@@ -68,7 +68,7 @@ unsigned long allocate_ondemand(unsigned long n, unsigned long alignment);
 void *map_frames_ex(const unsigned long *f, unsigned long n, unsigned long stride,
 	unsigned long increment, unsigned long alignment, domid_t id,
 	int *err, unsigned long prot);
-void do_map_frames(unsigned long addr,
+int do_map_frames(unsigned long addr,
         const unsigned long *f, unsigned long n, unsigned long stride,
 	unsigned long increment, domid_t id, int *err, unsigned long prot);
 int unmap_frames(unsigned long va, unsigned long num_frames);

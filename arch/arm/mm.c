@@ -1,6 +1,7 @@
 #include <mini-os/console.h>
 #include <xen/memory.h>
 #include <arch_mm.h>
+#include <mini-os/errno.h>
 #include <mini-os/hypervisor.h>
 #include <libfdt.h>
 #include <lib.h>
@@ -77,6 +78,13 @@ void arch_init_p2m(unsigned long max_pfn)
 
 void arch_init_demand_mapping_area(void)
 {
+}
+
+int do_map_frames(unsigned long addr,
+        const unsigned long *f, unsigned long n, unsigned long stride,
+        unsigned long increment, domid_t id, int *err, unsigned long prot)
+{
+    return -ENOSYS;
 }
 
 /* Get Xen's suggested physical page assignments for the grant table. */
