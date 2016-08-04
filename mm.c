@@ -319,6 +319,11 @@ int free_physical_pages(xen_pfn_t *mfns, int n)
     return HYPERVISOR_memory_op(XENMEM_decrease_reservation, &reservation);
 }
 
+int map_frame_rw(unsigned long addr, unsigned long mfn)
+{
+    return do_map_frames(addr, &mfn, 1, 1, 1, DOMID_SELF, NULL, L1_PROT);
+}
+
 #ifdef HAVE_LIBC
 void *sbrk(ptrdiff_t increment)
 {

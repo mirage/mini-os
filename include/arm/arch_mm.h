@@ -14,6 +14,8 @@ extern uint32_t physical_address_offset;	/* Add this to a virtual address to get
 
 #define L1_PAGETABLE_SHIFT      12
 
+#define L1_PROT          0
+
 #define to_phys(x)                 (((paddr_t)(x)+physical_address_offset) & 0xffffffff)
 #define to_virt(x)                 ((void *)(((x)-physical_address_offset) & 0xffffffff))
 

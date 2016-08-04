@@ -72,6 +72,7 @@ int do_map_frames(unsigned long addr,
         const unsigned long *f, unsigned long n, unsigned long stride,
 	unsigned long increment, domid_t id, int *err, unsigned long prot);
 int unmap_frames(unsigned long va, unsigned long num_frames);
+int map_frame_rw(unsigned long addr, unsigned long mfn);
 #ifdef HAVE_LIBC
 extern unsigned long heap, brk, heap_mapped, heap_end;
 #endif
