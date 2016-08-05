@@ -126,3 +126,35 @@ int balloon_up(unsigned long n_pages)
 
     return rc;
 }
+
+static int in_balloon;
+
+int chk_free_pages(unsigned long needed)
+{
+    unsigned long n_pages;
+
+    /* No need for ballooning if plenty of space available. */
+    if ( needed + BALLOON_EMERGENCY_PAGES <= nr_free_pages )
+        return 1;
+
+    /* If we are already ballooning up just hope for the best. */
+    if ( in_balloon )
+        return 1;
+
+    /* Interrupts disabled can't be handled right now. */
+    if ( irqs_disabled() )
+        return 1;
+
+    in_balloon = 1;
+
+    while ( needed + BALLOON_EMERGENCY_PAGES > nr_free_pages )
+    {
+        n_pages = needed + BALLOON_EMERGENCY_PAGES - nr_free_pages;
+        if ( !balloon_up(n_pages) )
+            break;
+    }
+
+    in_balloon = 0;
+
+    return needed <= nr_free_pages;
+}

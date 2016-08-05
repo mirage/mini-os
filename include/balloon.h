@@ -26,6 +26,12 @@
 
 #ifdef CONFIG_BALLOON
 
+/*
+ * Always keep some pages free for allocations while ballooning or
+ * interrupts disabled.
+ */
+#define BALLOON_EMERGENCY_PAGES   64
+
 extern unsigned long nr_max_pages;
 extern unsigned long virt_kernel_area_end;
 extern unsigned long nr_mem_pages;
@@ -37,12 +43,17 @@ void arch_remap_p2m(unsigned long max_pfn);
 void mm_alloc_bitmap_remap(void);
 int arch_expand_p2m(unsigned long max_pfn);
 void arch_pfn_add(unsigned long pfn, unsigned long mfn);
+int chk_free_pages(unsigned long needed);
 
 #else /* CONFIG_BALLOON */
 
 static inline void get_max_pages(void) { }
 static inline void arch_remap_p2m(unsigned long max_pfn) { }
 static inline void mm_alloc_bitmap_remap(void) { }
+static inline int chk_free_pages(unsigned long needed)
+{
+    return needed <= nr_free_pages;
+}
 
 #endif /* CONFIG_BALLOON */
 #endif /* _BALLOON_H_ */

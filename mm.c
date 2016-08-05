@@ -210,6 +210,8 @@ unsigned long alloc_pages(int order)
     chunk_head_t *alloc_ch, *spare_ch;
     chunk_tail_t            *spare_ct;
 
+    if ( !chk_free_pages(1UL << order) )
+        goto no_memory;
 
     /* Find smallest order which can satisfy the request. */
     for ( i = order; i < FREELIST_SIZE; i++ ) {
@@ -344,7 +346,7 @@ void *sbrk(ptrdiff_t increment)
     if (new_brk > heap_mapped) {
         unsigned long n = (new_brk - heap_mapped + PAGE_SIZE - 1) / PAGE_SIZE;
 
-        if ( n > nr_free_pages )
+        if ( !chk_free_pages(n) )
         {
             printk("Memory exhausted: want %ld pages, but only %ld are left\n",
                    n, nr_free_pages);
