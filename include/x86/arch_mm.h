@@ -176,7 +176,28 @@ typedef unsigned long pgentry_t;
 #define IO_PROT_NOCACHE (L1_PROT | _PAGE_PCD)
 
 /* for P2M */
+#ifdef __x86_64__
+#define P2M_SHIFT       9
+#else
+#define P2M_SHIFT       10
+#endif
+#define P2M_ENTRIES     (1UL << P2M_SHIFT)
+#define P2M_MASK        (P2M_ENTRIES - 1)
+#define L1_P2M_SHIFT    P2M_SHIFT
+#define L2_P2M_SHIFT    (2 * P2M_SHIFT)
+#define L3_P2M_SHIFT    (3 * P2M_SHIFT)
+#define L1_P2M_IDX(pfn) ((pfn) & P2M_MASK)
+#define L2_P2M_IDX(pfn) (((pfn) >> L1_P2M_SHIFT) & P2M_MASK)
+#define L3_P2M_IDX(pfn) (((pfn) >> L2_P2M_SHIFT) & P2M_MASK)
 #define INVALID_P2M_ENTRY (~0UL)
+static inline void p2m_chk_pfn(unsigned long pfn)
+{
+    if ( (pfn >> L3_P2M_SHIFT) > 0 )
+    {
+        printk("Error: Too many pfns.\n");
+        do_exit();
+    }
+}
 
 #include "arch_limits.h"
 #define PAGE_SIZE       __PAGE_SIZE

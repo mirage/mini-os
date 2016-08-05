@@ -609,40 +609,19 @@ static void clear_bootstrap(void)
 
 void arch_init_p2m(unsigned long max_pfn)
 {
-#ifdef __x86_64__
-#define L1_P2M_SHIFT    9
-#define L2_P2M_SHIFT    18    
-#define L3_P2M_SHIFT    27    
-#else
-#define L1_P2M_SHIFT    10
-#define L2_P2M_SHIFT    20    
-#define L3_P2M_SHIFT    30    
-#endif
-#define L1_P2M_ENTRIES  (1 << L1_P2M_SHIFT)    
-#define L2_P2M_ENTRIES  (1 << (L2_P2M_SHIFT - L1_P2M_SHIFT))    
-#define L3_P2M_ENTRIES  (1 << (L3_P2M_SHIFT - L2_P2M_SHIFT))    
-#define L1_P2M_MASK     (L1_P2M_ENTRIES - 1)    
-#define L2_P2M_MASK     (L2_P2M_ENTRIES - 1)    
-#define L3_P2M_MASK     (L3_P2M_ENTRIES - 1)    
-    
     unsigned long *l2_list = NULL, *l3_list;
     unsigned long pfn;
     
+    p2m_chk_pfn(max_pfn - 1);
     l3_list = (unsigned long *)alloc_page(); 
-    for ( pfn = 0; pfn < max_pfn; pfn += L1_P2M_ENTRIES )
+    for ( pfn = 0; pfn < max_pfn; pfn += P2M_ENTRIES )
     {
-        if ( !(pfn % (L1_P2M_ENTRIES * L2_P2M_ENTRIES)) )
+        if ( !(pfn % (P2M_ENTRIES * P2M_ENTRIES)) )
         {
             l2_list = (unsigned long*)alloc_page();
-            if ( (pfn >> L3_P2M_SHIFT) > 0 )
-            {
-                printk("Error: Too many pfns.\n");
-                do_exit();
-            }
-            l3_list[(pfn >> L2_P2M_SHIFT)] = virt_to_mfn(l2_list);  
+            l3_list[L3_P2M_IDX(pfn)] = virt_to_mfn(l2_list);
         }
-        l2_list[(pfn >> L1_P2M_SHIFT) & L2_P2M_MASK] =
-            virt_to_mfn(phys_to_machine_mapping + pfn);
+        l2_list[L2_P2M_IDX(pfn)] = virt_to_mfn(phys_to_machine_mapping + pfn);
     }
     HYPERVISOR_shared_info->arch.pfn_to_mfn_frame_list_list = 
         virt_to_mfn(l3_list);
