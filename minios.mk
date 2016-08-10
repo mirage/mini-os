@@ -32,9 +32,9 @@ DEF_CFLAGS += -D__INSIDE_MINIOS__
 # Build the CFLAGS and ASFLAGS for compiling and assembling.
 # DEF_... flags are the common mini-os flags,
 # ARCH_... flags may be defined in arch/$(TARGET_ARCH_FAM/rules.mk
-CFLAGS := $(DEF_CFLAGS) $(ARCH_CFLAGS)
+CFLAGS := $(DEF_CFLAGS) $(ARCH_CFLAGS) $(DEFINES-y)
 CPPFLAGS := $(DEF_CPPFLAGS) $(ARCH_CPPFLAGS)
-ASFLAGS := $(DEF_ASFLAGS) $(ARCH_ASFLAGS)
+ASFLAGS := $(DEF_ASFLAGS) $(ARCH_ASFLAGS) $(DEFINES-y)
 LDFLAGS := $(DEF_LDFLAGS) $(ARCH_LDFLAGS)
 
 # Special build dependencies.

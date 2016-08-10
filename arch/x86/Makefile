@@ -6,9 +6,6 @@
 TOPLEVEL_DIR = $(CURDIR)/../..
 include ../../Config.mk
 
-# include arch.mk has to be before mini-os.mk!
-
-include arch.mk
 include ../../minios.mk
 
 # Sources here are all *.c *.S without $(MINIOS_TARGET_ARCH).S

@@ -23,6 +23,11 @@ cc-option = $(shell if test -z "`echo 'void*p=1;' | \
               $(1) $(2) -S -o /dev/null -x c - 2>&1 | grep -- $(2) -`"; \
               then echo "$(2)"; else echo "$(3)"; fi ;)
 
+ifneq ($(MINIOS_CONFIG),)
+EXTRA_DEPS += $(MINIOS_CONFIG)
+include $(MINIOS_CONFIG)
+endif
+
 # Compatibility with Xen's stubdom build environment.  If we are building
 # stubdom, some XEN_ variables are set, set MINIOS_ variables accordingly.
 #
@@ -97,3 +102,91 @@ DEF_CPPFLAGS += -DHAVE_LWIP
 DEF_CPPFLAGS += -isystem $(LWIPDIR)/src/include
 DEF_CPPFLAGS += -isystem $(LWIPDIR)/src/include/ipv4
 endif
+
+# Set tools
+AS         = $(CROSS_COMPILE)as
+LD         = $(CROSS_COMPILE)ld
+ifeq ($(clang),y)
+CC         = $(CROSS_COMPILE)clang
+LD_LTO     = $(CROSS_COMPILE)llvm-ld
+else
+CC         = $(CROSS_COMPILE)gcc
+LD_LTO     = $(CROSS_COMPILE)ld
+endif
+CPP        = $(CC) -E
+AR         = $(CROSS_COMPILE)ar
+RANLIB     = $(CROSS_COMPILE)ranlib
+NM         = $(CROSS_COMPILE)nm
+STRIP      = $(CROSS_COMPILE)strip
+OBJCOPY    = $(CROSS_COMPILE)objcopy
+OBJDUMP    = $(CROSS_COMPILE)objdump
+SIZEUTIL   = $(CROSS_COMPILE)size
+
+# Allow git to be wrappered in the environment
+GIT        ?= git
+
+INSTALL      = install
+INSTALL_DIR  = $(INSTALL) -d -m0755 -p
+INSTALL_DATA = $(INSTALL) -m0644 -p
+INSTALL_PROG = $(INSTALL) -m0755 -p
+
+BOOT_DIR ?= /boot
+
+SOCKET_LIBS =
+UTIL_LIBS = -lutil
+DLOPEN_LIBS = -ldl
+
+SONAME_LDFLAG = -soname
+SHLIB_LDFLAGS = -shared
+
+ifneq ($(debug),y)
+CFLAGS += -O2 -fomit-frame-pointer
+else
+# Less than -O1 produces bad code and large stack frames
+CFLAGS += -O1 -fno-omit-frame-pointer
+CFLAGS-$(gcc) += -fno-optimize-sibling-calls
+endif
+
+ifeq ($(lto),y)
+CFLAGS += -flto
+LDFLAGS-$(clang) += -plugin LLVMgold.so
+endif
+
+# Configuration defaults
+CONFIG_START_NETWORK ?= y
+CONFIG_SPARSE_BSS ?= y
+CONFIG_QEMU_XS_ARGS ?= n
+CONFIG_TEST ?= n
+CONFIG_PCIFRONT ?= n
+CONFIG_BLKFRONT ?= y
+CONFIG_TPMFRONT ?= n
+CONFIG_TPM_TIS ?= n
+CONFIG_TPMBACK ?= n
+CONFIG_NETFRONT ?= y
+CONFIG_FBFRONT ?= y
+CONFIG_KBDFRONT ?= y
+CONFIG_CONSFRONT ?= y
+CONFIG_XENBUS ?= y
+CONFIG_XC ?=y
+CONFIG_LWIP ?= $(lwip)
+CONFIG_BALLOON ?= n
+
+# Export config items as compiler directives
+DEFINES-$(CONFIG_START_NETWORK) += -DCONFIG_START_NETWORK
+DEFINES-$(CONFIG_SPARSE_BSS) += -DCONFIG_SPARSE_BSS
+DEFINES-$(CONFIG_QEMU_XS_ARGS) += -DCONFIG_QEMU_XS_ARGS
+DEFINES-$(CONFIG_PCIFRONT) += -DCONFIG_PCIFRONT
+DEFINES-$(CONFIG_BLKFRONT) += -DCONFIG_BLKFRONT
+DEFINES-$(CONFIG_TPMFRONT) += -DCONFIG_TPMFRONT
+DEFINES-$(CONFIG_TPM_TIS) += -DCONFIG_TPM_TIS
+DEFINES-$(CONFIG_TPMBACK) += -DCONFIG_TPMBACK
+DEFINES-$(CONFIG_NETFRONT) += -DCONFIG_NETFRONT
+DEFINES-$(CONFIG_KBDFRONT) += -DCONFIG_KBDFRONT
+DEFINES-$(CONFIG_FBFRONT) += -DCONFIG_FBFRONT
+DEFINES-$(CONFIG_CONSFRONT) += -DCONFIG_CONSFRONT
+DEFINES-$(CONFIG_XENBUS) += -DCONFIG_XENBUS
+DEFINES-$(CONFIG_BALLOON) += -DCONFIG_BALLOON
+
+# Override settings for this OS
+PTHREAD_LIBS =
+nosharedlibs=y
