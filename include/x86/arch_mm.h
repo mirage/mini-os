@@ -190,14 +190,9 @@ typedef unsigned long pgentry_t;
 #define L2_P2M_IDX(pfn) (((pfn) >> L1_P2M_SHIFT) & P2M_MASK)
 #define L3_P2M_IDX(pfn) (((pfn) >> L2_P2M_SHIFT) & P2M_MASK)
 #define INVALID_P2M_ENTRY (~0UL)
-static inline void p2m_chk_pfn(unsigned long pfn)
-{
-    if ( (pfn >> L3_P2M_SHIFT) > 0 )
-    {
-        printk("Error: Too many pfns.\n");
-        do_exit();
-    }
-}
+
+void p2m_chk_pfn(unsigned long pfn);
+
 static inline unsigned long p2m_pages(unsigned long pages)
 {
     return (pages + P2M_ENTRIES - 1) >> L1_P2M_SHIFT;

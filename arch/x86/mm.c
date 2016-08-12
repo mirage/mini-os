@@ -608,6 +608,15 @@ static void clear_bootstrap(void)
         printk("Unable to unmap NULL page. rc=%d\n", rc);
 }
 
+void p2m_chk_pfn(unsigned long pfn)
+{
+    if ( (pfn >> L3_P2M_SHIFT) > 0 )
+    {
+        printk("Error: Too many pfns.\n");
+        do_exit();
+    }
+}
+
 void arch_init_p2m(unsigned long max_pfn)
 {
     unsigned long *l2_list = NULL, *l3_list;
