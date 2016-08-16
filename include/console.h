@@ -61,7 +61,7 @@ struct consfront_dev {
 #endif
 };
 
-
+extern uint32_t console_evtchn;
 
 void print(int direct, const char *fmt, va_list args);
 void printk(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
@@ -72,6 +72,7 @@ void xprintk(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 void xencons_rx(char *buf, unsigned len, struct pt_regs *regs);
 void xencons_tx(void);
 
+void get_console(void *p);
 void init_console(void);
 void console_print(struct consfront_dev *dev, char *data, int length);
 void fini_console(struct consfront_dev *dev);

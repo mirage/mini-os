@@ -137,6 +137,7 @@ arch_init(void *par)
 	/* Copy the start_info struct to a globally-accessible area. */
 	/* WARN: don't do printk before here, it uses information from
 	   shared_info. Use xprintk instead. */
+	get_console(par);
 	si = par;
 	memcpy(&start_info, si, sizeof(*si));
 

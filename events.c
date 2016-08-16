@@ -46,7 +46,7 @@ void unbind_all_ports(void)
 
     for ( i = 0; i < NR_EVS; i++ )
     {
-        if ( i == start_info.console.domU.evtchn ||
+        if ( i == console_evtchn ||
              i == start_info.store_evtchn)
             continue;
 

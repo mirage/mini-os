@@ -25,20 +25,6 @@ extern char shared_info_page[PAGE_SIZE];
 
 void *device_tree;
 
-static void get_console(void)
-{
-    uint64_t v = -1;
-
-    hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
-    start_info.console.domU.evtchn = v;
-
-    hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
-    start_info.console.domU.mfn = v;
-
-    printk("Console is on port %d\n", start_info.console.domU.evtchn);
-    printk("Console ring is at mfn %lx\n", (unsigned long) start_info.console.domU.mfn);
-}
-
 void get_xenbus(void)
 {
     uint64_t value;
@@ -85,7 +71,7 @@ void arch_init(void *dtb_pointer, uint32_t physical_offset)
     HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
 
     /* Fill in start_info */
-    get_console();
+    get_console(NULL);
     get_xenbus();
 
     gic_init();

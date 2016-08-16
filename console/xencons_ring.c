@@ -9,27 +9,49 @@
 #include <xen/io/console.h>
 #include <xen/io/protocols.h>
 #include <xen/io/ring.h>
+#include <xen/hvm/params.h>
 #include <mini-os/xmalloc.h>
 #include <mini-os/gnttab.h>
 #include "console.h"
 
 DECLARE_WAIT_QUEUE_HEAD(console_queue);
 
+static struct xencons_interface *console_ring;
+uint32_t console_evtchn;
+
+#ifdef CONFIG_PARAVIRT
+void get_console(void *p)
+{
+    start_info_t *si = p;
+
+    console_ring = mfn_to_virt(si->console.domU.mfn);
+    console_evtchn = si->console.domU.evtchn;
+}
+#else
+void get_console(void *p)
+{
+    uint64_t v = -1;
+
+    hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
+    console_evtchn = v;
+
+    hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+    console_ring = (struct xencons_interface *)map_frame_virt(v);
+}
+#endif
+
 static inline void notify_daemon(struct consfront_dev *dev)
 {
     /* Use evtchn: this is called early, before irq is set up. */
     if (!dev)
-        notify_remote_via_evtchn(start_info.console.domU.evtchn);
+        notify_remote_via_evtchn(console_evtchn);
     else
         notify_remote_via_evtchn(dev->evtchn);
 }
 
 static inline struct xencons_interface *xencons_interface(void)
 {
-    if (start_info.console.domU.evtchn)
-        return mfn_to_virt(start_info.console.domU.mfn);
-    else
-        return NULL;
+    return console_evtchn ? console_ring : NULL;
 } 
  
 int xencons_ring_send_no_notify(struct consfront_dev *dev, const char *data, unsigned len)
@@ -158,7 +180,7 @@ struct consfront_dev *xencons_ring_init(void)
 	int err;
 	struct consfront_dev *dev;
 
-	if (!start_info.console.domU.evtchn)
+	if (!console_evtchn)
 		return 0;
 
 	dev = malloc(sizeof(struct consfront_dev));
@@ -171,8 +193,8 @@ struct consfront_dev *xencons_ring_init(void)
 #ifdef HAVE_LIBC
 	dev->fd = -1;
 #endif
-	dev->evtchn = start_info.console.domU.evtchn;
-	dev->ring = (struct xencons_interface *) mfn_to_virt(start_info.console.domU.mfn);
+	dev->evtchn = console_evtchn;
+	dev->ring = xencons_interface();
 
 	err = bind_evtchn(dev->evtchn, console_handle_input, dev);
 	if (err <= 0) {
