@@ -1,6 +1,7 @@
 *~
 *.o
 *.a
+*.swp
 include/list.h
 mini-os
 mini-os.gz
