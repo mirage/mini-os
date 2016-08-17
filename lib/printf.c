@@ -379,6 +379,7 @@ reswitch:       switch (ch = (u_char)*fmt++) {
                                 padc = '0';
                                 goto reswitch;
                         }
+                        /* fallthrough */
                 case '1': case '2': case '3': case '4':
                 case '5': case '6': case '7': case '8': case '9':
                                 for (n = 0;; ++fmt) {
@@ -966,20 +967,16 @@ literal:
                                 width = 1;
                         if (flags & SUPPRESS) {
                                 size_t sum = 0;
-                                for (;;) {
-                                        if ((n = inr) < width) {
-                                                sum += n;
-                                                width -= n;
-                                                inp += n;
-                                                if (sum == 0)
-                                                        goto input_failure;
-                                                break;
-                                        } else {
-                                                sum += width;
-                                                inr -= width;
-                                                inp += width;
-                                                break;
-                                        }
+                                if ((n = inr) < width) {
+                                        sum += n;
+                                        width -= n;
+                                        inp += n;
+                                        if (sum == 0)
+                                                goto input_failure;
+                                } else {
+                                        sum += width;
+                                        inr -= width;
+                                        inp += width;
                                 }
                                 nread += sum;
                         } else {
