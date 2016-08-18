@@ -56,6 +56,37 @@ unsigned long mfn_zero;
 extern char stack[];
 extern void page_walk(unsigned long va);
 
+#ifndef CONFIG_PARAVIRT
+#include <mini-os/desc.h>
+user_desc gdt[NR_GDT_ENTRIES] =
+{
+    [GDTE_CS64_DPL0] = INIT_GDTE_SYM(0, 0xfffff, COMMON, CODE, DPL0, R, L),
+    [GDTE_CS32_DPL0] = INIT_GDTE_SYM(0, 0xfffff, COMMON, CODE, DPL0, R, D),
+    [GDTE_DS32_DPL0] = INIT_GDTE_SYM(0, 0xfffff, COMMON, DATA, DPL0, B, W),
+
+    [GDTE_CS64_DPL3] = INIT_GDTE_SYM(0, 0xfffff, COMMON, CODE, DPL3, R, L),
+    [GDTE_CS32_DPL3] = INIT_GDTE_SYM(0, 0xfffff, COMMON, CODE, DPL3, R, D),
+    [GDTE_DS32_DPL3] = INIT_GDTE_SYM(0, 0xfffff, COMMON, DATA, DPL3, B, W),
+
+    /* [GDTE_TSS]     */
+    /* [GDTE_TSS + 1] */
+};
+
+desc_ptr gdt_ptr =
+{
+    .limit = sizeof(gdt) - 1,
+    .base = (unsigned long)&gdt,
+};
+
+gate_desc idt[256] = { };
+
+desc_ptr idt_ptr =
+{
+    .limit = sizeof(idt) - 1,
+    .base = (unsigned long)&idt,
+};
+#endif
+
 /*
  * Make pt_pfn a new 'level' page table frame and hook it into the page
  * table at offset in previous level MFN (pref_l_mfn). pt_pfn is a guest

@@ -24,7 +24,7 @@ include minios.mk
 LDLIBS := 
 APP_LDLIBS := 
 LDARCHLIB := -L$(OBJ_DIR)/$(TARGET_ARCH_DIR) -l$(ARCH_LIB_NAME)
-LDFLAGS_FINAL := -T $(TARGET_ARCH_DIR)/minios-$(MINIOS_TARGET_ARCH).lds
+LDFLAGS_FINAL := -T $(TARGET_ARCH_DIR)/minios-$(MINIOS_TARGET_ARCH).lds $(ARCH_LDFLAGS_FINAL)
 
 # Prefix for global API names. All other symbols are localised before
 # linking with EXTRA_OBJS.

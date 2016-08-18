@@ -94,9 +94,10 @@ static inline void sse_init(void) {
  * INITIAL C ENTRY POINT.
  */
 void
-arch_init(start_info_t *si)
+arch_init(void *par)
 {
 	static char hello[] = "Bootstrapping...\n";
+	start_info_t *si;
 
 	(void)HYPERVISOR_console_io(CONSOLEIO_write, strlen(hello), hello);
 
@@ -111,6 +112,7 @@ arch_init(start_info_t *si)
 	/* Copy the start_info struct to a globally-accessible area. */
 	/* WARN: don't do printk before here, it uses information from
 	   shared_info. Use xprintk instead. */
+	si = par;
 	memcpy(&start_info, si, sizeof(*si));
 
 	/* print out some useful information  */

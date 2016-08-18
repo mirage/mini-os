@@ -1,20 +1,31 @@
 #include <mini-os/os.h>
 #include <mini-os/x86/arch_limits.h>
 #include <mini-os/asm_macros.h>
+#include <mini-os/arch_mm.h>
+#include <mini-os/desc.h>
+#include <xen/arch-x86_32.h>
 #include <xen/elfnote.h>
 #include <xen/arch-x86_32.h>
 
+#ifdef CONFIG_PARAVIRT
 ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS, .asciz "Mini-OS")
 ELFNOTE(Xen, XEN_ELFNOTE_LOADER, .asciz "generic")
 ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _WORD hypercall_page)
 ELFNOTE(Xen, XEN_ELFNOTE_XEN_VERSION, .asciz "xen-3.0")
 ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE, .asciz "yes")
+.text
 
-.globl _start, shared_info, hypercall_page
+.globl _start
                         
 _start:
-        cld
         lss stack_start,%esp
+#else
+
+#include "x86_hvm.S"
+        movl stack_start,%esp
+
+#endif
+        cld
         andl $(~(__STACK_SIZE-1)), %esp
         push %esi 
         call arch_init
@@ -22,14 +33,15 @@ _start:
 stack_start:
 	.long stack+(2*__STACK_SIZE), __KERNEL_SS
 
+.globl shared_info, hypercall_page
         /* Unpleasant -- the PTE that maps this page is actually overwritten */
         /* to map the real shared-info page! :-)                             */
-        .org 0x1000
+        .align __PAGE_SIZE
 shared_info:
-        .org 0x2000
+        .fill __PAGE_SIZE,1,0
 
 hypercall_page:
-        .org 0x3000
+        .fill __PAGE_SIZE,1,0
 
 ES		= 0x20
 ORIG_EAX	= 0x24
@@ -300,3 +312,12 @@ ENTRY(__arch_switch_threads)
     popl %ebx
     popl %ebp
     ret
+
+#ifndef CONFIG_PARAVIRT
+.data
+.globl page_table_base
+        .align __PAGE_SIZE
+page_table_base:
+        PTE(page_table_l2 + L3_PROT)
+        .align __PAGE_SIZE, 0
+#endif

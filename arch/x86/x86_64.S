@@ -1,19 +1,29 @@
 #include <mini-os/os.h>
 #include <mini-os/x86/arch_limits.h>
 #include <mini-os/asm_macros.h>
+#include <mini-os/arch_mm.h>
+#include <mini-os/desc.h>
+#include <xen/features.h>
 #include <xen/elfnote.h>
 #include <xen/features.h>
 
+#define ENTRY(X) .globl X ; X :
+
+#ifdef CONFIG_PARAVIRT
 ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS, .asciz "Mini-OS")
 ELFNOTE(Xen, XEN_ELFNOTE_LOADER, .asciz "generic")
 ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _WORD hypercall_page)
 ELFNOTE(Xen, XEN_ELFNOTE_XEN_VERSION, .asciz "xen-3.0")
+.text
 
-#define ENTRY(X) .globl X ; X :
-.globl _start, shared_info, hypercall_page
-
+.globl _start
 
 _start:
+#else
+
+#include "x86_hvm.S"
+
+#endif
         cld
         movq stack_start(%rip),%rsp
         andq $(~(__STACK_SIZE-1)), %rsp
@@ -23,14 +33,15 @@ _start:
 stack_start:
         .quad stack+(2*__STACK_SIZE)
 
+.globl shared_info, hypercall_page
         /* Unpleasant -- the PTE that maps this page is actually overwritten */
         /* to map the real shared-info page! :-)                             */
-        .org 0x1000
+        .align __PAGE_SIZE
 shared_info:
-        .org 0x2000
+        .fill __PAGE_SIZE,1,0
 
 hypercall_page:
-        .org 0x3000
+        .fill __PAGE_SIZE,1,0
 
 
 #define XEN_GET_VCPU_INFO(reg)	movq HYPERVISOR_shared_info,reg
@@ -378,3 +389,15 @@ ENTRY(__arch_switch_threads)
 	popq %rbx
 	popq %rbp
 	ret
+
+#ifndef CONFIG_PARAVIRT
+.data
+.globl page_table_base
+        .align __PAGE_SIZE
+page_table_l3:
+        PTE(page_table_l2 + L3_PROT)
+        .align __PAGE_SIZE, 0
+page_table_base:
+        PTE(page_table_l3 + L4_PROT)
+        .align __PAGE_SIZE, 0
+#endif

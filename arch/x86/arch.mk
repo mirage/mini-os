@@ -20,3 +20,7 @@ EXTRA_INC += $(TARGET_ARCH_FAM)/$(MINIOS_TARGET_ARCH)
 EXTRA_SRC += arch/$(EXTRA_INC)
 endif
 
+ifeq ($(CONFIG_PARAVIRT),n)
+ARCH_LDFLAGS_FINAL := --oformat=elf32-i386
+ARCH_AS_DEPS += x86_hvm.S
+endif

@@ -68,7 +68,7 @@ HEAD_OBJ := $(OBJ_DIR)/$(TARGET_ARCH_DIR)/$(HEAD_ARCH_OBJ)
 $(OBJ_DIR)/%.o: %.c $(HDRS) Makefile $(EXTRA_DEPS)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: %.S $(HDRS) Makefile $(EXTRA_DEPS)
+$(OBJ_DIR)/%.o: %.S $(HDRS) Makefile $(EXTRA_DEPS) $(ARCH_AS_DEPS)
 	$(CC) $(ASFLAGS) $(CPPFLAGS) -c $< -o $@
 
 
