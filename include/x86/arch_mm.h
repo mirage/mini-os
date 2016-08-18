@@ -29,11 +29,16 @@
 #include <xen/xen.h>
 #if defined(__i386__)
 #include <xen/arch-x86_32.h>
+#define __CONST(x) x ## ULL
 #elif defined(__x86_64__)
 #include <xen/arch-x86_64.h>
+#define __CONST(x) x ## UL
 #else
 #error "Unsupported architecture"
 #endif
+#define CONST(x) __CONST(x)
+#else
+#define CONST(x) x
 #endif
 
 /*
@@ -81,14 +86,16 @@
 #define PRIpte "016llx"
 #ifndef __ASSEMBLY__
 typedef uint64_t pgentry_t;
+#else
+#define PTE(val) .long val; .long 0
 #endif
 
-#define MAX_MEM_SIZE            0x3f000000UL
-#define VIRT_KERNEL_AREA        0x3f000000UL
-#define VIRT_DEMAND_AREA        0x40000000UL
-#define VIRT_HEAP_AREA          0xb0000000UL
+#define MAX_MEM_SIZE            CONST(0x3f000000)
+#define VIRT_KERNEL_AREA        CONST(0x3f000000)
+#define VIRT_DEMAND_AREA        CONST(0x40000000)
+#define VIRT_HEAP_AREA          CONST(0xb0000000)
 
-#define DEMAND_MAP_PAGES        0x6ffffUL
+#define DEMAND_MAP_PAGES        CONST(0x6ffff)
 #define HEAP_PAGES_MAX          ((HYPERVISOR_VIRT_START - VIRT_HEAP_AREA) / \
                                  PAGE_SIZE - 1)
 
@@ -115,15 +122,17 @@ typedef uint64_t pgentry_t;
 #define PRIpte "016lx"
 #ifndef __ASSEMBLY__
 typedef unsigned long pgentry_t;
+#else
+#define PTE(val) .quad val
 #endif
 
-#define MAX_MEM_SIZE            (512ULL << 30)
-#define VIRT_KERNEL_AREA        0x0000008000000000UL
-#define VIRT_DEMAND_AREA        0x0000100000000000UL
-#define VIRT_HEAP_AREA          0x0000200000000000UL
+#define MAX_MEM_SIZE            (CONST(512) << 30)
+#define VIRT_KERNEL_AREA        CONST(0x0000008000000000)
+#define VIRT_DEMAND_AREA        CONST(0x0000100000000000)
+#define VIRT_HEAP_AREA          CONST(0x0000200000000000)
 
-#define DEMAND_MAP_PAGES        0x8000000UL
-#define HEAP_PAGES_MAX          0x8000000UL
+#define DEMAND_MAP_PAGES        CONST(0x8000000)
+#define HEAP_PAGES_MAX          CONST(0x8000000)
 
 #endif
 
@@ -147,16 +156,16 @@ typedef unsigned long pgentry_t;
   (((_a) >> L4_PAGETABLE_SHIFT) & (L4_PAGETABLE_ENTRIES - 1))
 #endif
 
-#define _PAGE_PRESENT  0x001ULL
-#define _PAGE_RW       0x002ULL
-#define _PAGE_USER     0x004ULL
-#define _PAGE_PWT      0x008ULL
-#define _PAGE_PCD      0x010ULL
-#define _PAGE_ACCESSED 0x020ULL
-#define _PAGE_DIRTY    0x040ULL
-#define _PAGE_PAT      0x080ULL
-#define _PAGE_PSE      0x080ULL
-#define _PAGE_GLOBAL   0x100ULL
+#define _PAGE_PRESENT  CONST(0x001)
+#define _PAGE_RW       CONST(0x002)
+#define _PAGE_USER     CONST(0x004)
+#define _PAGE_PWT      CONST(0x008)
+#define _PAGE_PCD      CONST(0x010)
+#define _PAGE_ACCESSED CONST(0x020)
+#define _PAGE_DIRTY    CONST(0x040)
+#define _PAGE_PAT      CONST(0x080)
+#define _PAGE_PSE      CONST(0x080)
+#define _PAGE_GLOBAL   CONST(0x100)
 
 #if defined(__i386__)
 #define L1_PROT (_PAGE_PRESENT|_PAGE_RW|_PAGE_ACCESSED)
@@ -191,12 +200,14 @@ typedef unsigned long pgentry_t;
 #define L3_P2M_IDX(pfn) (((pfn) >> L2_P2M_SHIFT) & P2M_MASK)
 #define INVALID_P2M_ENTRY (~0UL)
 
+#ifndef __ASSEMBLY__
 void p2m_chk_pfn(unsigned long pfn);
 
 static inline unsigned long p2m_pages(unsigned long pages)
 {
     return (pages + P2M_ENTRIES - 1) >> L1_P2M_SHIFT;
 }
+#endif
 
 #include "arch_limits.h"
 #define PAGE_SIZE       __PAGE_SIZE
@@ -239,7 +250,6 @@ static __inline__ paddr_t machine_to_phys(maddr_t machine)
 	phys = (phys << PAGE_SHIFT) | (machine & ~PAGE_MASK);
 	return phys;
 }
-#endif
 
 #define VIRT_START                 ((unsigned long)&_text)
 
@@ -287,5 +297,7 @@ static __inline__ paddr_t machine_to_phys(maddr_t machine)
 #define do_map_zero(start, n) do_map_frames(start, &mfn_zero, n, 0, 0, DOMID_SELF, NULL, L1_PROT_RO)
 
 pgentry_t *need_pgt(unsigned long addr);
+
+#endif
 
 #endif /* _ARCH_MM_H_ */
