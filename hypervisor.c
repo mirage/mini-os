@@ -36,6 +36,33 @@
 
 int in_callback;
 
+#ifndef CONFIG_PARAVIRT
+int hvm_get_parameter(int idx, uint64_t *value)
+{
+    struct xen_hvm_param xhv;
+    int ret;
+
+    xhv.domid = DOMID_SELF;
+    xhv.index = idx;
+    ret = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
+    if ( ret < 0 )
+        BUG();
+
+    *value = xhv.value;
+    return ret;
+}
+
+int hvm_set_parameter(int idx, uint64_t value)
+{
+    struct xen_hvm_param xhv;
+
+    xhv.domid = DOMID_SELF;
+    xhv.index = idx;
+    xhv.value = value;
+    return HYPERVISOR_hvm_op(HVMOP_set_param, &xhv);
+}
+#endif
+
 void do_hypervisor_callback(struct pt_regs *regs)
 {
     unsigned long  l1, l2, l1i, l2i;

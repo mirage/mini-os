@@ -25,21 +25,6 @@ extern char shared_info_page[PAGE_SIZE];
 
 void *device_tree;
 
-static int hvm_get_parameter(int idx, uint64_t *value)
-{
-    struct xen_hvm_param xhv;
-    int ret;
-
-    xhv.domid = DOMID_SELF;
-    xhv.index = idx;
-    ret = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
-    if (ret < 0) {
-        BUG();
-    }
-    *value = xhv.value;
-    return ret;
-}
-
 static void get_console(void)
 {
     uint64_t v = -1;

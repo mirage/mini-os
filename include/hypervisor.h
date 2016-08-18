@@ -23,6 +23,7 @@
 #else
 #error "Unsupported architecture"
 #endif
+#include <xen/hvm/hvm_op.h>
 #include <mini-os/traps.h>
 
 /*
@@ -37,6 +38,10 @@ extern union start_info_union start_info_union;
 #define start_info (start_info_union.start_info)
 
 /* hypervisor.c */
+#ifndef CONFIG_PARAVIRT
+int hvm_get_parameter(int idx, uint64_t *value);
+int hvm_set_parameter(int idx, uint64_t value);
+#endif
 void force_evtchn_callback(void);
 void do_hypervisor_callback(struct pt_regs *regs);
 void mask_evtchn(uint32_t port);
