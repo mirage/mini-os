@@ -25,8 +25,6 @@
 
 #ifdef CONFIG_BALLOON
 
-unsigned long virt_kernel_area_end;   /* TODO: find a virtual area */
-
 void arch_pfn_add(unsigned long pfn, unsigned long mfn)
 {
 }

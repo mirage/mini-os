@@ -33,7 +33,6 @@
 #define BALLOON_EMERGENCY_PAGES   64
 
 extern unsigned long nr_max_pages;
-extern unsigned long virt_kernel_area_end;
 extern unsigned long nr_mem_pages;
 
 void get_max_pages(void);

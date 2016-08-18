@@ -141,3 +141,8 @@ grant_entry_t *arch_init_gnttab(int nr_grant_frames)
 
     return to_virt(gnttab_table);
 }
+
+unsigned long map_frame_virt(unsigned long mfn)
+{
+    return mfn_to_virt(mfn);
+}

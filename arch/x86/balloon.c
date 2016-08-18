@@ -29,9 +29,6 @@
 #include <mini-os/paravirt.h>
 
 #ifdef CONFIG_BALLOON
-
-unsigned long virt_kernel_area_end = VIRT_KERNEL_AREA;
-
 #ifdef CONFIG_PARAVIRT
 static void p2m_invalidate(unsigned long *list, unsigned long start_idx)
 {
@@ -53,7 +50,7 @@ static inline unsigned long *p2m_to_virt(unsigned long p2m)
 
 void arch_remap_p2m(unsigned long max_pfn)
 {
-    unsigned long pfn;
+    unsigned long pfn, new_p2m;
     unsigned long *l3_list, *l2_list, *l1_list;
 
     l3_list = p2m_l3list();
@@ -67,17 +64,15 @@ void arch_remap_p2m(unsigned long max_pfn)
     if ( p2m_pages(nr_max_pages) <= p2m_pages(max_pfn) )
         return;
 
+    new_p2m = alloc_virt_kernel(p2m_pages(nr_max_pages));
     for ( pfn = 0; pfn < max_pfn; pfn += P2M_ENTRIES )
     {
-        map_frame_rw(virt_kernel_area_end + PAGE_SIZE * (pfn / P2M_ENTRIES),
+        map_frame_rw(new_p2m + PAGE_SIZE * (pfn / P2M_ENTRIES),
                      virt_to_mfn(phys_to_machine_mapping + pfn));
     }
 
-    phys_to_machine_mapping = (unsigned long *)virt_kernel_area_end;
+    phys_to_machine_mapping = (unsigned long *)new_p2m;
     printk("remapped p2m list to %p\n", phys_to_machine_mapping);
-
-    virt_kernel_area_end += PAGE_SIZE * p2m_pages(nr_max_pages);
-    ASSERT(virt_kernel_area_end <= VIRT_DEMAND_AREA);
 }
 
 int arch_expand_p2m(unsigned long max_pfn)

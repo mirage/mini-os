@@ -57,6 +57,7 @@ unsigned long mfn_zero;
 pgentry_t *pt_base;
 static unsigned long first_free_pfn;
 static unsigned long last_free_pfn;
+static unsigned long virt_kernel_area_end = VIRT_KERNEL_AREA;
 
 extern char stack[];
 extern void page_walk(unsigned long va);
@@ -828,4 +829,26 @@ grant_entry_t *arch_init_gnttab(int nr_grant_frames)
 
     HYPERVISOR_grant_table_op(GNTTABOP_setup_table, &setup, 1);
     return map_frames(frames, nr_grant_frames);
+}
+
+unsigned long alloc_virt_kernel(unsigned n_pages)
+{
+    unsigned long addr;
+
+    addr = virt_kernel_area_end;
+    virt_kernel_area_end += PAGE_SIZE * n_pages;
+    ASSERT(virt_kernel_area_end <= VIRT_DEMAND_AREA);
+
+    return addr;
+}
+
+unsigned long map_frame_virt(unsigned long mfn)
+{
+    unsigned long addr;
+
+    addr = alloc_virt_kernel(1);
+    if ( map_frame_rw(addr, mfn) )
+        return 0;
+
+    return addr;
 }

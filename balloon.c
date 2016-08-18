@@ -50,20 +50,19 @@ void get_max_pages(void)
 
 void mm_alloc_bitmap_remap(void)
 {
-    unsigned long i;
+    unsigned long i, new_bitmap;
 
     if ( mm_alloc_bitmap_size >= ((nr_max_pages + 1) >> 3) )
         return;
 
+    new_bitmap = alloc_virt_kernel(PFN_UP((nr_max_pages + 1) >> 3));
     for ( i = 0; i < mm_alloc_bitmap_size; i += PAGE_SIZE )
     {
-        map_frame_rw(virt_kernel_area_end + i,
+        map_frame_rw(new_bitmap + i,
                      virt_to_mfn((unsigned long)(mm_alloc_bitmap) + i));
     }
 
-    mm_alloc_bitmap = (unsigned long *)virt_kernel_area_end;
-    virt_kernel_area_end += round_pgup((nr_max_pages + 1) >> 3);
-    ASSERT(virt_kernel_area_end <= VIRT_DEMAND_AREA);
+    mm_alloc_bitmap = (unsigned long *)new_bitmap;
 }
 
 #define N_BALLOON_FRAMES 64
