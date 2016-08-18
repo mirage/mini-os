@@ -130,18 +130,22 @@ KERNEL_CS_MASK = 0xfc
 .endm
 
 .macro HYPERVISOR_IRET flag
+#ifdef CONFIG_PARAVIRT
 	testl $NMI_MASK,2*8(%rsp)
 	jnz   2f
+#endif
 
 	/* Direct iret to kernel space. Correct CS and SS. */
 	orb   $3,1*8(%rsp)
 	orb   $3,4*8(%rsp)
 	iretq
 
+#ifdef CONFIG_PARAVIRT
 2:	/* Slow iret via hypervisor. */
 	andl  $~NMI_MASK, 16(%rsp)
 	pushq $\flag
 	jmp  hypercall_page + (__HYPERVISOR_iret * 32)
+#endif
 .endm
 
 

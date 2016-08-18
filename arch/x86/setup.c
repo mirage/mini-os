@@ -52,10 +52,6 @@ char stack[2*STACK_SIZE];
 
 extern char shared_info[PAGE_SIZE];
 
-/* Assembler interface fns in entry.S. */
-void hypervisor_callback(void);
-void failsafe_callback(void);
-
 #if defined(__x86_64__)
 #define __pte(x) ((pte_t) { (x) } )
 #else
@@ -161,17 +157,6 @@ arch_init(void *par)
 
 	/* Grab the shared_info pointer and put it in a safe place. */
 	HYPERVISOR_shared_info = map_shared_info(start_info.shared_info);
-
-	    /* Set up event and failsafe callback addresses. */
-#ifdef __i386__
-	HYPERVISOR_set_callbacks(
-		__KERNEL_CS, (unsigned long)hypervisor_callback,
-		__KERNEL_CS, (unsigned long)failsafe_callback);
-#else
-	HYPERVISOR_set_callbacks(
-		(unsigned long)hypervisor_callback,
-		(unsigned long)failsafe_callback, 0);
-#endif
 
 	start_kernel();
 }

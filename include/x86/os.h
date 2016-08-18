@@ -56,6 +56,7 @@
 #define TRAP_machine_check    18
 #define TRAP_simd_error       19
 #define TRAP_deferred_nmi     31
+#define TRAP_xen_callback     32
 
 /* Everything below this point is not included by assembler (.S) files. */
 #ifndef __ASSEMBLY__
