@@ -26,11 +26,13 @@
 #include <mini-os/errno.h>
 #include <mini-os/lib.h>
 #include <mini-os/mm.h>
+#include <mini-os/paravirt.h>
 
 #ifdef CONFIG_BALLOON
 
 unsigned long virt_kernel_area_end = VIRT_KERNEL_AREA;
 
+#ifdef CONFIG_PARAVIRT
 static void p2m_invalidate(unsigned long *list, unsigned long start_idx)
 {
     unsigned long idx;
@@ -143,5 +145,16 @@ void arch_pfn_add(unsigned long pfn, unsigned long mfn)
         do_exit();
     }
 }
+#else
+void arch_pfn_add(unsigned long pfn, unsigned long mfn)
+{
+    pgentry_t *pgt;
+
+    pgt = need_pgt((unsigned long)pfn_to_virt(pfn));
+    ASSERT(pgt);
+    if ( !(*pgt & _PAGE_PSE) )
+        *pgt = (pgentry_t)(mfn << PAGE_SHIFT) | _PAGE_PRESENT | _PAGE_RW;
+}
+#endif
 
 #endif

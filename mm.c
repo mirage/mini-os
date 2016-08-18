@@ -39,6 +39,7 @@
 #include <xen/memory.h>
 #include <mini-os/mm.h>
 #include <mini-os/balloon.h>
+#include <mini-os/paravirt.h>
 #include <mini-os/types.h>
 #include <mini-os/lib.h>
 #include <mini-os/xmalloc.h>

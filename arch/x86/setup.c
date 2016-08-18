@@ -131,6 +131,9 @@ arch_init(void *par)
 	/* Initialize SSE */
 	sse_init();
 
+	/* Setup memory management info from start_info. */
+	arch_mm_preinit(par);
+
 	/* Copy the start_info struct to a globally-accessible area. */
 	/* WARN: don't do printk before here, it uses information from
 	   shared_info. Use xprintk instead. */
@@ -151,9 +154,6 @@ arch_init(void *par)
 	printk("    cmd_line: %s\n",
 			si->cmd_line ? (const char *)si->cmd_line : "NULL");
 	printk("       stack: %p-%p\n", stack, stack + sizeof(stack));
-
-	/* set up minimal memory infos */
-	phys_to_machine_mapping = (unsigned long *)start_info.mfn_list;
 
 	/* Grab the shared_info pointer and put it in a safe place. */
 	HYPERVISOR_shared_info = map_shared_info(start_info.shared_info);

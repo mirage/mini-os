@@ -36,6 +36,7 @@
 #endif
 #include <xen/xen.h>
 
+#include <mini-os/paravirt.h>
 #include <mini-os/arch_limits.h>
 #include <mini-os/arch_mm.h>
 
@@ -67,7 +68,6 @@ static __inline__ int get_order(unsigned long size)
 
 void arch_init_demand_mapping_area(void);
 void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p);
-void arch_init_p2m(unsigned long max_pfn_p);
 
 unsigned long allocate_ondemand(unsigned long n, unsigned long alignment);
 /* map f[i*stride]+i*increment for i in 0..n-1, aligned on alignment pages */

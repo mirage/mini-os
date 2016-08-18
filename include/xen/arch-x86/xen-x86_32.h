@@ -55,6 +55,7 @@
 #define FLAT_USER_DS    FLAT_RING3_DS
 #define FLAT_USER_SS    FLAT_RING3_SS
 
+#ifdef CONFIG_PARAVIRT
 #define __HYPERVISOR_VIRT_START_PAE    0xF5800000
 #define __MACH2PHYS_VIRT_START_PAE     0xF5800000
 #define __MACH2PHYS_VIRT_END_PAE       0xF6800000
@@ -89,6 +90,7 @@
 #define MACH2PHYS_NR_ENTRIES  ((MACH2PHYS_VIRT_END-MACH2PHYS_VIRT_START)>>2)
 #ifndef machine_to_phys_mapping
 #define machine_to_phys_mapping ((unsigned long *)MACH2PHYS_VIRT_START)
+#endif
 #endif
 
 /* 32-/64-bit invariability for control interfaces (domctl/sysctl). */

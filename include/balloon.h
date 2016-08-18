@@ -39,16 +39,13 @@ extern unsigned long nr_mem_pages;
 void get_max_pages(void);
 int balloon_up(unsigned long n_pages);
 
-void arch_remap_p2m(unsigned long max_pfn);
 void mm_alloc_bitmap_remap(void);
-int arch_expand_p2m(unsigned long max_pfn);
 void arch_pfn_add(unsigned long pfn, unsigned long mfn);
 int chk_free_pages(unsigned long needed);
 
 #else /* CONFIG_BALLOON */
 
 static inline void get_max_pages(void) { }
-static inline void arch_remap_p2m(unsigned long max_pfn) { }
 static inline void mm_alloc_bitmap_remap(void) { }
 static inline int chk_free_pages(unsigned long needed)
 {

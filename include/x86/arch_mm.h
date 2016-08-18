@@ -184,31 +184,6 @@ typedef unsigned long pgentry_t;
 #define IO_PROT (L1_PROT)
 #define IO_PROT_NOCACHE (L1_PROT | _PAGE_PCD)
 
-/* for P2M */
-#ifdef __x86_64__
-#define P2M_SHIFT       9
-#else
-#define P2M_SHIFT       10
-#endif
-#define P2M_ENTRIES     (1UL << P2M_SHIFT)
-#define P2M_MASK        (P2M_ENTRIES - 1)
-#define L1_P2M_SHIFT    P2M_SHIFT
-#define L2_P2M_SHIFT    (2 * P2M_SHIFT)
-#define L3_P2M_SHIFT    (3 * P2M_SHIFT)
-#define L1_P2M_IDX(pfn) ((pfn) & P2M_MASK)
-#define L2_P2M_IDX(pfn) (((pfn) >> L1_P2M_SHIFT) & P2M_MASK)
-#define L3_P2M_IDX(pfn) (((pfn) >> L2_P2M_SHIFT) & P2M_MASK)
-#define INVALID_P2M_ENTRY (~0UL)
-
-#ifndef __ASSEMBLY__
-void p2m_chk_pfn(unsigned long pfn);
-
-static inline unsigned long p2m_pages(unsigned long pages)
-{
-    return (pages + P2M_ENTRIES - 1) >> L1_P2M_SHIFT;
-}
-#endif
-
 #include "arch_limits.h"
 #define PAGE_SIZE       __PAGE_SIZE
 #define PAGE_SHIFT      __PAGE_SHIFT
@@ -232,10 +207,14 @@ typedef unsigned long paddr_t;
 typedef unsigned long maddr_t;
 #endif
 
+extern pgentry_t *pt_base;
+#ifdef CONFIG_PARAVIRT
 extern unsigned long *phys_to_machine_mapping;
+#else
+extern pgentry_t page_table_base[];
+#endif
 extern char _text, _etext, _erodata, _edata, _end;
 extern unsigned long mfn_zero;
-#define pfn_to_mfn(_pfn) (phys_to_machine_mapping[(_pfn)])
 static __inline__ maddr_t phys_to_machine(paddr_t phys)
 {
 	maddr_t machine = pfn_to_mfn(phys >> PAGE_SHIFT);
@@ -243,7 +222,6 @@ static __inline__ maddr_t phys_to_machine(paddr_t phys)
 	return machine;
 }
 
-#define mfn_to_pfn(_mfn) (machine_to_phys_mapping[(_mfn)])
 static __inline__ paddr_t machine_to_phys(maddr_t machine)
 {
 	paddr_t phys = mfn_to_pfn(machine >> PAGE_SHIFT);
@@ -267,13 +245,10 @@ static __inline__ paddr_t machine_to_phys(maddr_t machine)
 #define pte_to_mfn(_pte)           (((_pte) & (PADDR_MASK&PAGE_MASK)) >> L1_PAGETABLE_SHIFT)
 #define pte_to_virt(_pte)          to_virt(mfn_to_pfn(pte_to_mfn(_pte)) << PAGE_SHIFT)
 
-
-#define PT_BASE			   ((pgentry_t *)start_info.pt_base)
-
 #ifdef __x86_64__
-#define virtual_to_l3(_virt)	   ((pgentry_t *)pte_to_virt(PT_BASE[l4_table_offset(_virt)]))
+#define virtual_to_l3(_virt)	   ((pgentry_t *)pte_to_virt(pt_base[l4_table_offset(_virt)]))
 #else
-#define virtual_to_l3(_virt)	   PT_BASE
+#define virtual_to_l3(_virt)	   pt_base
 #endif
 
 #define virtual_to_l2(_virt)	   ({ \
@@ -297,6 +272,7 @@ static __inline__ paddr_t machine_to_phys(maddr_t machine)
 #define do_map_zero(start, n) do_map_frames(start, &mfn_zero, n, 0, 0, DOMID_SELF, NULL, L1_PROT_RO)
 
 pgentry_t *need_pgt(unsigned long addr);
+void arch_mm_preinit(void *p);
 
 #endif
 

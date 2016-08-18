@@ -70,6 +70,7 @@
 #define FLAT_USER_SS32 FLAT_RING3_SS32
 #define FLAT_USER_SS   FLAT_USER_SS64
 
+#ifdef CONFIG_PARAVIRT
 #define __HYPERVISOR_VIRT_START 0xFFFF800000000000
 #define __HYPERVISOR_VIRT_END   0xFFFF880000000000
 #define __MACH2PHYS_VIRT_START  0xFFFF800000000000
@@ -85,6 +86,7 @@
 #define MACH2PHYS_NR_ENTRIES  ((MACH2PHYS_VIRT_END-MACH2PHYS_VIRT_START)>>3)
 #ifndef machine_to_phys_mapping
 #define machine_to_phys_mapping ((unsigned long *)HYPERVISOR_VIRT_START)
+#endif
 #endif
 
 /*

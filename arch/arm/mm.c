@@ -72,10 +72,6 @@ void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
     *max_pfn_p = to_phys(new_device_tree) >> PAGE_SHIFT;
 }
 
-void arch_init_p2m(unsigned long max_pfn)
-{
-}
-
 void arch_init_demand_mapping_area(void)
 {
 }

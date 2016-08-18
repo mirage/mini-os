@@ -97,9 +97,9 @@ DO_ERROR(18, "machine check", machine_check)
 
 void page_walk(unsigned long virt_address)
 {
-        pgentry_t *tab = (pgentry_t *)start_info.pt_base, page;
+        pgentry_t *tab = pt_base, page;
         unsigned long addr = virt_address;
-        printk("Pagetable walk from virt %lx, base %lx:\n", virt_address, start_info.pt_base);
+        printk("Pagetable walk from virt %lx, base %p:\n", virt_address, pt_base);
     
 #if defined(__x86_64__)
         page = tab[l4_table_offset(addr)];
@@ -119,7 +119,7 @@ void page_walk(unsigned long virt_address)
 }
 
 static int handle_cow(unsigned long addr) {
-        pgentry_t *tab = (pgentry_t *)start_info.pt_base, page;
+        pgentry_t *tab = pt_base, page;
 	unsigned long new_page;
 	int rc;
 

@@ -25,6 +25,7 @@
 #include <mini-os/balloon.h>
 #include <mini-os/errno.h>
 #include <mini-os/lib.h>
+#include <mini-os/paravirt.h>
 #include <xen/xen.h>
 #include <xen/memory.h>
 

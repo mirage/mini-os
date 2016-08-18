@@ -29,9 +29,6 @@ extern uint32_t physical_address_offset;	/* Add this to a virtual address to get
 #define mfn_to_virt(_mfn)          (to_virt(PFN_PHYS(_mfn)))
 #define pfn_to_virt(_pfn)          (to_virt(PFN_PHYS(_pfn)))
 
-#define mfn_to_pfn(x) (x)
-#define pfn_to_mfn(x) (x)
-
 #define virtual_to_mfn(_virt)	   virt_to_mfn(_virt)
 
 // FIXME

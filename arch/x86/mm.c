@@ -39,6 +39,7 @@
 #include <mini-os/hypervisor.h>
 #include <mini-os/balloon.h>
 #include <mini-os/mm.h>
+#include <mini-os/paravirt.h>
 #include <mini-os/types.h>
 #include <mini-os/lib.h>
 #include <mini-os/xmalloc.h>
@@ -53,10 +54,24 @@
 
 unsigned long *phys_to_machine_mapping;
 unsigned long mfn_zero;
+pgentry_t *pt_base;
+static unsigned long first_free_pfn;
+static unsigned long last_free_pfn;
+
 extern char stack[];
 extern void page_walk(unsigned long va);
 
-#ifndef CONFIG_PARAVIRT
+#ifdef CONFIG_PARAVIRT
+void arch_mm_preinit(void *p)
+{
+    start_info_t *si = p;
+
+    phys_to_machine_mapping = (unsigned long *)si->mfn_list;
+    pt_base = (pgentry_t *)si->pt_base;
+    first_free_pfn = PFN_UP(to_phys(pt_base)) + si->nr_pt_frames;
+    last_free_pfn = si->nr_pages;
+}
+#else
 #include <mini-os/desc.h>
 user_desc gdt[NR_GDT_ENTRIES] =
 {
@@ -85,6 +100,22 @@ desc_ptr idt_ptr =
     .limit = sizeof(idt) - 1,
     .base = (unsigned long)&idt,
 };
+
+void arch_mm_preinit(void *p)
+{
+    long ret;
+    domid_t domid = DOMID_SELF;
+
+    pt_base = page_table_base;
+    first_free_pfn = PFN_UP(to_phys(&_end));
+    ret = HYPERVISOR_memory_op(XENMEM_current_reservation, &domid);
+    if ( ret < 0 )
+    {
+        xprintk("could not get memory size\n");
+        do_exit();
+    }
+    last_free_pfn = ret;
+}
 #endif
 
 /*
@@ -95,7 +126,7 @@ desc_ptr idt_ptr =
 static void new_pt_frame(unsigned long *pt_pfn, unsigned long prev_l_mfn, 
                          unsigned long offset, unsigned long level)
 {   
-    pgentry_t *tab = (pgentry_t *)start_info.pt_base;
+    pgentry_t *tab = pt_base;
     unsigned long pt_page = (unsigned long)pfn_to_virt(*pt_pfn); 
     pgentry_t prot_e, prot_t;
     mmu_update_t mmu_updates[1];
@@ -172,8 +203,8 @@ static void build_pagetable(unsigned long *start_pfn, unsigned long *max_pfn)
     unsigned long start_address, end_address;
     unsigned long pfn_to_map, pt_pfn = *start_pfn;
     static mmu_update_t mmu_updates[L1_PAGETABLE_ENTRIES + 1];
-    pgentry_t *tab = (pgentry_t *)start_info.pt_base, page;
-    unsigned long pt_mfn = pfn_to_mfn(virt_to_pfn(start_info.pt_base));
+    pgentry_t *tab = pt_base, page;
+    unsigned long pt_mfn = pfn_to_mfn(virt_to_pfn(pt_base));
     unsigned long offset;
     int count = 0;
     int rc;
@@ -182,6 +213,7 @@ static void build_pagetable(unsigned long *start_pfn, unsigned long *max_pfn)
        mapped, start the loop at the very beginning. */
     pfn_to_map = *start_pfn;
 
+#ifdef CONFIG_PARAVIRT
     if ( *max_pfn >= virt_to_pfn(HYPERVISOR_VIRT_START) )
     {
         printk("WARNING: Mini-OS trying to use Xen virtual space. "
@@ -193,6 +225,7 @@ static void build_pagetable(unsigned long *start_pfn, unsigned long *max_pfn)
                ((unsigned long)pfn_to_virt(*max_pfn) - 
                 (unsigned long)&_text)>>20);
     }
+#endif
 
     start_address = (unsigned long)pfn_to_virt(pfn_to_map);
     end_address = (unsigned long)pfn_to_virt(*max_pfn);
@@ -202,8 +235,8 @@ static void build_pagetable(unsigned long *start_pfn, unsigned long *max_pfn)
 
     while ( start_address < end_address )
     {
-        tab = (pgentry_t *)start_info.pt_base;
-        pt_mfn = pfn_to_mfn(virt_to_pfn(start_info.pt_base));
+        tab = pt_base;
+        pt_mfn = pfn_to_mfn(virt_to_pfn(pt_base));
 
 #if defined(__x86_64__)
         offset = l4_table_offset(start_address);
@@ -270,8 +303,8 @@ static void set_readonly(void *text, void *etext)
         ((unsigned long) text + PAGE_SIZE - 1) & PAGE_MASK;
     unsigned long end_address = (unsigned long) etext;
     static mmu_update_t mmu_updates[L1_PAGETABLE_ENTRIES + 1];
-    pgentry_t *tab = (pgentry_t *)start_info.pt_base, page;
-    unsigned long mfn = pfn_to_mfn(virt_to_pfn(start_info.pt_base));
+    pgentry_t *tab = pt_base, page;
+    unsigned long mfn = pfn_to_mfn(virt_to_pfn(pt_base));
     unsigned long offset;
     int count = 0;
     int rc;
@@ -280,8 +313,8 @@ static void set_readonly(void *text, void *etext)
 
     while ( start_address + PAGE_SIZE <= end_address )
     {
-        tab = (pgentry_t *)start_info.pt_base;
-        mfn = pfn_to_mfn(virt_to_pfn(start_info.pt_base));
+        tab = pt_base;
+        mfn = pfn_to_mfn(virt_to_pfn(pt_base));
 
 #if defined(__x86_64__)
         offset = l4_table_offset(start_address);
@@ -343,8 +376,8 @@ static pgentry_t *get_pgt(unsigned long va)
     pgentry_t *tab;
     unsigned offset;
 
-    tab = (pgentry_t *)start_info.pt_base;
-    mfn = virt_to_mfn(start_info.pt_base);
+    tab = pt_base;
+    mfn = virt_to_mfn(pt_base);
 
 #if defined(__x86_64__)
     offset = l4_table_offset(va);
@@ -379,8 +412,8 @@ pgentry_t *need_pgt(unsigned long va)
     unsigned long pt_pfn;
     unsigned offset;
 
-    tab = (pgentry_t *)start_info.pt_base;
-    pt_mfn = virt_to_mfn(start_info.pt_base);
+    tab = pt_base;
+    pt_mfn = virt_to_mfn(pt_base);
 
 #if defined(__x86_64__)
     offset = l4_table_offset(va);
@@ -639,6 +672,7 @@ static void clear_bootstrap(void)
         printk("Unable to unmap NULL page. rc=%d\n", rc);
 }
 
+#ifdef CONFIG_PARAVIRT
 void p2m_chk_pfn(unsigned long pfn)
 {
     if ( (pfn >> L3_P2M_SHIFT) > 0 )
@@ -670,6 +704,7 @@ void arch_init_p2m(unsigned long max_pfn)
 
     arch_remap_p2m(max_pfn);
 }
+#endif
 
 void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p)
 {
@@ -683,8 +718,8 @@ void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p)
     printk("       _end: %p(VA)\n", &_end);
 
     /* First page follows page table pages. */
-    start_pfn = PFN_UP(to_phys(start_info.pt_base)) + start_info.nr_pt_frames;
-    max_pfn = start_info.nr_pages;
+    start_pfn = first_free_pfn;
+    max_pfn = last_free_pfn;
 
     if ( max_pfn >= MAX_MEM_SIZE / PAGE_SIZE )
         max_pfn = MAX_MEM_SIZE / PAGE_SIZE - 1;
