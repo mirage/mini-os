@@ -1,17 +1,14 @@
 #include <mini-os/os.h>
 #include <mini-os/x86/arch_limits.h>
+#include <mini-os/asm_macros.h>
+#include <xen/elfnote.h>
 #include <xen/arch-x86_32.h>
 
-.section __xen_guest
-	.ascii	"GUEST_OS=Mini-OS"
-	.ascii	",XEN_VER=xen-3.0"
-	.ascii	",VIRT_BASE=0x0" /* &_text from minios_x86_32.lds */
-	.ascii	",ELF_PADDR_OFFSET=0x0"
-	.ascii	",HYPERCALL_PAGE=0x2"
-	.ascii	",PAE=yes[extended-cr3]"
-	.ascii	",LOADER=generic"
-	.byte	0
-.text
+ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS, .asciz "Mini-OS")
+ELFNOTE(Xen, XEN_ELFNOTE_LOADER, .asciz "generic")
+ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _WORD hypercall_page)
+ELFNOTE(Xen, XEN_ELFNOTE_XEN_VERSION, .asciz "xen-3.0")
+ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE, .asciz "yes")
 
 .globl _start, shared_info, hypercall_page
                         

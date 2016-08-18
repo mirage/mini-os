@@ -15,6 +15,10 @@ SECTIONS
   .rodata : { *(.rodata) *(.rodata.*) }
   . = ALIGN(4096);
   _erodata = .;
+  .note : {
+	*(.note)
+	*(.note.*)
+  }
 
   /* newlib initialization functions */
   . = ALIGN(64 / 8);
