@@ -733,6 +733,17 @@ void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p)
 
     *start_pfn_p = start_pfn;
     *max_pfn_p = max_pfn;
+
+#ifndef CONFIG_PARAVIRT
+#ifdef __x86_64__
+    BUILD_BUG_ON(l4_table_offset(VIRT_KERNEL_AREA) != 1 ||
+                 l3_table_offset(VIRT_KERNEL_AREA) != 0 ||
+                 l2_table_offset(VIRT_KERNEL_AREA) != 0);
+#else
+    BUILD_BUG_ON(l3_table_offset(VIRT_KERNEL_AREA) != 0 ||
+                 l2_table_offset(VIRT_KERNEL_AREA) == 0);
+#endif
+#endif
 }
 
 grant_entry_t *arch_init_gnttab(int nr_grant_frames)

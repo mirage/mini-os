@@ -418,10 +418,17 @@ ENTRY(__arch_switch_threads)
 .data
 .globl page_table_base
         .align __PAGE_SIZE
+page_table_virt_l2:
+        PTE(page_table_virt_l1 + L2_PROT)
+        .align __PAGE_SIZE, 0
+page_table_virt_l3:
+        PTE(page_table_virt_l2 + L3_PROT)
+        .align __PAGE_SIZE, 0
 page_table_l3:
         PTE(page_table_l2 + L3_PROT)
         .align __PAGE_SIZE, 0
 page_table_base:
         PTE(page_table_l3 + L4_PROT)
+        PTE(page_table_virt_l3 + L4_PROT)
         .align __PAGE_SIZE, 0
 #endif
