@@ -78,6 +78,8 @@
 #define L2_PAGETABLE_ENTRIES    512
 #define L3_PAGETABLE_ENTRIES    4
 
+#define PAGETABLE_LEVELS        3
+
 #define PADDR_BITS              44
 #define PADDR_MASK              ((1ULL << PADDR_BITS)-1)
 
@@ -109,6 +111,8 @@ typedef uint64_t pgentry_t;
 #define L2_PAGETABLE_ENTRIES    512
 #define L3_PAGETABLE_ENTRIES    512
 #define L4_PAGETABLE_ENTRIES    512
+
+#define PAGETABLE_LEVELS        4
 
 /* These are page-table limitations. Current CPUs support only 40-bit phys. */
 #define PADDR_BITS              52

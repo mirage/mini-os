@@ -206,6 +206,15 @@ static inline int irqs_disabled(void)
  */
 typedef struct { volatile int counter; } atomic_t;
 
+static inline void write_cr3(unsigned long cr3)
+{
+    asm volatile( "mov %0, %%cr3" : : "r" (cr3) : "memory" );
+}
+
+static inline void invlpg(unsigned long va)
+{
+    asm volatile ( "invlpg %0": : "m" (*(const char *)(va)) : "memory" );
+}
 
 /************************** i386 *******************************/
 #ifdef __INSIDE_MINIOS__
