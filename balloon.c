@@ -52,7 +52,7 @@ void mm_alloc_bitmap_remap(void)
 {
     unsigned long i;
 
-    if ( mm_alloc_bitmap_size >= ((nr_max_pages + 1) >> (PAGE_SHIFT + 3)) )
+    if ( mm_alloc_bitmap_size >= ((nr_max_pages + 1) >> 3) )
         return;
 
     for ( i = 0; i < mm_alloc_bitmap_size; i += PAGE_SIZE )
@@ -62,7 +62,7 @@ void mm_alloc_bitmap_remap(void)
     }
 
     mm_alloc_bitmap = (unsigned long *)virt_kernel_area_end;
-    virt_kernel_area_end += round_pgup((nr_max_pages + 1) >> (PAGE_SHIFT + 3));
+    virt_kernel_area_end += round_pgup((nr_max_pages + 1) >> 3);
     ASSERT(virt_kernel_area_end <= VIRT_DEMAND_AREA);
 }
 
