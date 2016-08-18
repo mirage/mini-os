@@ -440,20 +440,23 @@ static __inline__ unsigned long __ffs(unsigned long word)
      (val) = ((unsigned long)__a) | (((unsigned long)__d)<<32); \
 } while(0)
 
+#else /* ifdef __x86_64__ */
+#error "Unsupported architecture"
+#endif
+
+#endif /* ifdef __INSIDE_MINIOS */
+
+/********************* common i386 and x86_64  ****************************/
 #define wrmsr(msr,val1,val2) \
       __asm__ __volatile__("wrmsr" \
                            : /* no outputs */ \
                            : "c" (msr), "a" (val1), "d" (val2))
 
-#define wrmsrl(msr,val) wrmsr(msr,(uint32_t)((uint64_t)(val)),((uint64_t)(val))>>32)
+static inline void wrmsrl(unsigned msr, uint64_t val)
+{
+    wrmsr(msr, (uint32_t)(val & 0xffffffffULL), (uint32_t)(val >> 32));
+}
 
-
-#else /* ifdef __x86_64__ */
-#error "Unsupported architecture"
-#endif
-#endif /* ifdef __INSIDE_MINIOS */
-
-/********************* common i386 and x86_64  ****************************/
 struct __synch_xchg_dummy { unsigned long a[100]; };
 #define __synch_xg(x) ((struct __synch_xchg_dummy *)(x))
 
@@ -569,6 +572,15 @@ HYPERVISOR_xsm_op(
         struct xen_flask_op *op)
 {
     return _hypercall1(int, xsm_op, op);
+}
+
+static inline void cpuid(uint32_t leaf,
+                         uint32_t *eax, uint32_t *ebx,
+                         uint32_t *ecx, uint32_t *edx)
+{
+    asm volatile ("cpuid"
+                  : "=a" (*eax), "=b" (*ebx), "=c" (*ecx), "=d" (*edx)
+                  : "0" (leaf));
 }
 
 #undef ADDR

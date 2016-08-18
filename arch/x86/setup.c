@@ -30,6 +30,7 @@
 #include <mini-os/lib.h> /* for printk, memcpy */
 #include <mini-os/kernel.h>
 #include <xen/xen.h>
+#include <xen/arch-x86/cpuid.h>
 
 /*
  * Shared page for communicating with the hypervisor.
@@ -89,6 +90,30 @@ static inline void sse_init(void) {
 #define sse_init()
 #endif
 
+#ifdef CONFIG_PARAVIRT
+#define hpc_init()
+#else
+static void hpc_init(void)
+{
+    uint32_t eax, ebx, ecx, edx, base;
+
+    for ( base = XEN_CPUID_FIRST_LEAF;
+          base < XEN_CPUID_FIRST_LEAF + 0x10000; base += 0x100 )
+    {
+        cpuid(base, &eax, &ebx, &ecx, &edx);
+
+        if ( (ebx == XEN_CPUID_SIGNATURE_EBX) &&
+             (ecx == XEN_CPUID_SIGNATURE_ECX) &&
+             (edx == XEN_CPUID_SIGNATURE_EDX) &&
+             ((eax - base) >= 2) )
+            break;
+    }
+
+    cpuid(base + 2, &eax, &ebx, &ecx, &edx);
+    wrmsrl(ebx, (unsigned long)&hypercall_page);
+    barrier();
+}
+#endif
 
 /*
  * INITIAL C ENTRY POINT.
@@ -99,6 +124,7 @@ arch_init(void *par)
 	static char hello[] = "Bootstrapping...\n";
 	start_info_t *si;
 
+	hpc_init();
 	(void)HYPERVISOR_console_io(CONSOLEIO_write, strlen(hello), hello);
 
 	trap_init();
