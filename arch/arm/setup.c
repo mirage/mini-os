@@ -25,20 +25,6 @@ extern char shared_info_page[PAGE_SIZE];
 
 void *device_tree;
 
-void get_xenbus(void)
-{
-    uint64_t value;
-
-    if (hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &value))
-        BUG();
-
-    start_info.store_evtchn = (int)value;
-
-    if(hvm_get_parameter(HVM_PARAM_STORE_PFN, &value))
-        BUG();
-    start_info.store_mfn = (unsigned long)value;
-}
-
 /*
  * INITIAL C ENTRY POINT.
  */
@@ -72,7 +58,7 @@ void arch_init(void *dtb_pointer, uint32_t physical_offset)
 
     /* Fill in start_info */
     get_console(NULL);
-    get_xenbus();
+    get_xenbus(NULL);
 
     gic_init();
 

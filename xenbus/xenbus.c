@@ -26,6 +26,7 @@
 #include <mini-os/sched.h>
 #include <mini-os/wait.h>
 #include <xen/io/xs_wire.h>
+#include <xen/hvm/params.h>
 #include <mini-os/spinlock.h>
 #include <mini-os/xmalloc.h>
 
@@ -61,6 +62,31 @@ struct xenbus_req_info
 
 #define NR_REQS 32
 static struct xenbus_req_info req_info[NR_REQS];
+
+uint32_t xenbus_evtchn;
+
+#ifdef CONFIG_PARAVIRT
+void get_xenbus(void *p)
+{
+    start_info_t *si = p;
+
+    xenbus_evtchn = si->store_evtchn;
+    xenstore_buf = mfn_to_virt(si->store_mfn);
+}
+#else
+void get_xenbus(void *p)
+{
+    uint64_t v;
+
+    if ( hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v) )
+        BUG();
+    xenbus_evtchn = v;
+
+    if( hvm_get_parameter(HVM_PARAM_STORE_PFN, &v) )
+        BUG();
+    xenstore_buf = (struct xenstore_domain_interface *)map_frame_virt(v);
+}
+#endif
 
 static void memcpy_from_ring(const void *Ring,
         void *Dest,
@@ -269,7 +295,7 @@ static void xenbus_thread_func(void *ign)
             }
 
             wmb();
-            notify_remote_via_evtchn(start_info.store_evtchn);
+            notify_remote_via_evtchn(xenbus_evtchn);
         }
     }
 }
@@ -335,15 +361,11 @@ void init_xenbus(void)
 {
     int err;
     DEBUG("init_xenbus called.\n");
-    xenstore_buf = mfn_to_virt(start_info.store_mfn);
     create_thread("xenstore", xenbus_thread_func, NULL);
     DEBUG("buf at %p.\n", xenstore_buf);
-    err = bind_evtchn(start_info.store_evtchn,
-		      xenbus_evtchn_handler,
-              NULL);
-    unmask_evtchn(start_info.store_evtchn);
-    printk("xenbus initialised on irq %d mfn %#llx\n",
-	   err, (unsigned long long) start_info.store_mfn);
+    err = bind_evtchn(xenbus_evtchn, xenbus_evtchn_handler, NULL);
+    unmask_evtchn(xenbus_evtchn);
+    printk("xenbus initialised on irq %d\n", err);
 }
 
 void fini_xenbus(void)
@@ -425,7 +447,7 @@ static void xb_write(int type, int req_id, xenbus_transaction_t trans_id,
     xenstore_buf->req_prod += len;
 
     /* Send evtchn to notify remote */
-    notify_remote_via_evtchn(start_info.store_evtchn);
+    notify_remote_via_evtchn(xenbus_evtchn);
 }
 
 /* Send a mesasge to xenbus, in the same fashion as xb_write, and

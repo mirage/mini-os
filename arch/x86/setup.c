@@ -138,6 +138,7 @@ arch_init(void *par)
 	/* WARN: don't do printk before here, it uses information from
 	   shared_info. Use xprintk instead. */
 	get_console(par);
+	get_xenbus(par);
 	si = par;
 	memcpy(&start_info, si, sizeof(*si));
 
