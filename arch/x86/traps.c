@@ -191,8 +191,6 @@ static void dump_mem(unsigned long addr)
     }
     printk("\n");
 }
-#define read_cr2() \
-        (HYPERVISOR_shared_info->vcpu_info[smp_processor_id()].arch.cr2)
 
 static int handling_pg_fault = 0;
 

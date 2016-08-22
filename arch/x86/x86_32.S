@@ -8,6 +8,9 @@
 #include <xen/arch-x86_32.h>
 
 #ifdef CONFIG_PARAVIRT
+
+#define KERNEL_DS __KERNEL_DS
+
 ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS, .asciz "Mini-OS")
 ELFNOTE(Xen, XEN_ELFNOTE_LOADER, .asciz "generic")
 ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _WORD hypercall_page)
@@ -20,6 +23,8 @@ ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE, .asciz "yes")
 _start:
         lss stack_start,%esp
 #else
+
+#define KERNEL_DS __KERN_DS
 
 #include "x86_hvm.S"
         movl stack_start,%esp
@@ -61,7 +66,7 @@ CS		= 0x2C
 	pushl %edx; \
 	pushl %ecx; \
 	pushl %ebx; \
-	movl $(__KERNEL_DS),%edx; \
+	movl $(KERNEL_DS),%edx; \
 	movl %edx,%ds; \
 	movl %edx,%es;
 
@@ -98,7 +103,7 @@ do_exception:
 	movl ORIG_EAX(%esp), %edx	# get the error code
 	movl %eax, ORIG_EAX(%esp)
 	movl %ecx, ES(%esp)
-	movl $(__KERNEL_DS), %ecx
+	movl $(KERNEL_DS), %ecx
 	movl %ecx, %ds
 	movl %ecx, %es
 	movl %esp,%eax			# pt_regs pointer
@@ -112,6 +117,7 @@ ret_from_exception:
     addl $8,%esp
     RESTORE_ALL
 
+#ifdef CONFIG_PARAVIRT
 # A note on the "critical region" in our callback handler.
 # We want to avoid stacking callback handlers due to events occurring
 # during handling of the last event. To do this, we keep events disabled
@@ -189,6 +195,15 @@ critical_fixup_table:
         .byte 0x28                            # iret
         .byte 0x00,0x00,0x00,0x00             # movb $1,1(%esi)
         .byte 0x00,0x00                       # jmp  11b
+
+#else
+
+ENTRY(hypervisor_callback)
+	pushl $0
+	pushl $do_hypervisor_callback
+	jmp do_exception
+
+#endif
        
 # Hypervisor uses this for application faults while it executes.
 ENTRY(failsafe_callback)

@@ -31,6 +31,8 @@
 #define X86_CR4_PAE       0x00000020    /* enable physical address extensions */
 #define X86_CR4_OSFXSR    0x00000200    /* enable fast FPU save and restore */
 
+#define X86_EFLAGS_IF     0x00000200
+
 #define __KERNEL_CS  FLAT_KERNEL_CS
 #define __KERNEL_DS  FLAT_KERNEL_DS
 #define __KERNEL_SS  FLAT_KERNEL_SS
@@ -70,7 +72,7 @@ void arch_fini(void);
 
 
 
-
+#ifdef CONFIG_PARAVIRT
 
 /* 
  * The use of 'barrier' in the following reflects their use as local-lock
@@ -129,14 +131,56 @@ do {									\
 	barrier();							\
 } while (0)
 
+#define irqs_disabled()			\
+    HYPERVISOR_shared_info->vcpu_info[smp_processor_id()].evtchn_upcall_mask
+
+#else
+
+#if defined(__i386__)
+#define __SZ "l"
+#define __REG "e"
+#else
+#define __SZ "q"
+#define __REG "r"
+#endif
+
+#define __cli() asm volatile ( "cli" : : : "memory" )
+#define __sti() asm volatile ( "sti" : : : "memory" )
+
+#define __save_flags(x)                                                 \
+do {                                                                    \
+    unsigned long __f;                                                  \
+    asm volatile ( "pushf" __SZ " ; pop" __SZ " %0" : "=g" (__f));      \
+    x = (__f & X86_EFLAGS_IF) ? 1 : 0;                                  \
+} while (0)
+
+#define __restore_flags(x)                                              \
+do {                                                                    \
+    if (x) __sti();                                                     \
+    else __cli();                                                       \
+} while (0)
+
+#define __save_and_cli(x)                                               \
+do {                                                                    \
+    __save_flags(x);                                                    \
+    __cli();                                                            \
+} while (0)
+
+static inline int irqs_disabled(void)
+{
+    int flag;
+
+    __save_flags(flag);
+    return !flag;
+}
+
+#endif
+
 #define local_irq_save(x)	__save_and_cli(x)
 #define local_irq_restore(x)	__restore_flags(x)
 #define local_save_flags(x)	__save_flags(x)
 #define local_irq_disable()	__cli()
 #define local_irq_enable()	__sti()
-
-#define irqs_disabled()			\
-    HYPERVISOR_shared_info->vcpu_info[smp_processor_id()].evtchn_upcall_mask
 
 /* This is a barrier for the compiler only, NOT the processor! */
 #define barrier() __asm__ __volatile__("": : :"memory")
@@ -585,6 +629,21 @@ static inline void cpuid(uint32_t leaf,
 }
 
 #undef ADDR
+
+#ifdef CONFIG_PARAVIRT
+static inline unsigned long read_cr2(void)
+{
+    return HYPERVISOR_shared_info->vcpu_info[smp_processor_id()].arch.cr2;
+}
+#else
+static inline unsigned long read_cr2(void)
+{
+    unsigned long cr2;
+
+    asm volatile ( "mov %%cr2,%0\n\t" : "=r" (cr2) );
+    return cr2;
+}
+#endif
 
 #endif /* not assembly */
 #endif /* _OS_H_ */

@@ -78,9 +78,11 @@ KERNEL_CS_MASK = 0xfc
 
 /* Macros */
 .macro zeroentry sym
+#ifdef CONFIG_PARAVIRT
 	movq (%rsp),%rcx
 	movq 8(%rsp),%r11
 	addq $0x10,%rsp /* skip rcx and r11 */
+#endif
 	pushq $0	/* push error code/oldrax */
 	pushq %rax	/* push real oldrax to the rdi slot */
 	leaq  \sym(%rip),%rax
@@ -88,9 +90,11 @@ KERNEL_CS_MASK = 0xfc
 .endm
 
 .macro errorentry sym
+#ifdef CONFIG_PARAVIRT
 	movq (%rsp),%rcx
 	movq 8(%rsp),%r11
 	addq $0x10,%rsp /* rsp points to the error code */
+#endif
 	pushq %rax
 	leaq  \sym(%rip),%rax
 	jmp error_entry
@@ -133,11 +137,11 @@ KERNEL_CS_MASK = 0xfc
 #ifdef CONFIG_PARAVIRT
 	testl $NMI_MASK,2*8(%rsp)
 	jnz   2f
-#endif
 
 	/* Direct iret to kernel space. Correct CS and SS. */
 	orb   $3,1*8(%rsp)
 	orb   $3,4*8(%rsp)
+#endif
 	iretq
 
 #ifdef CONFIG_PARAVIRT
@@ -182,6 +186,7 @@ error_call_handler:
 	jmp error_exit
 
 
+#ifdef CONFIG_PARAVIRT
 /*
  * Xen event (virtual interrupt) entry point.
  */
@@ -285,11 +290,26 @@ critical_region_fixup:
 	andb $KERNEL_CS_MASK,CS(%rsp)      # CS might have changed
 	jmp  11b
 
+#else
+error_exit:
+	RESTORE_REST
+	RESTORE_ALL
+	HYPERVISOR_IRET 0
 
+/*
+ * Xen event (virtual interrupt) entry point.
+ */
+ENTRY(hypervisor_callback)
+	zeroentry do_hypervisor_callback
+
+
+#endif
 
 ENTRY(failsafe_callback)
+#ifdef CONFIG_PARAVIRT
         popq  %rcx
         popq  %r11
+#endif
         iretq
 
 
