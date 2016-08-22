@@ -29,6 +29,7 @@
 #include <mini-os/lib.h>
 #include <mini-os/hypervisor.h>
 #include <mini-os/events.h>
+#include <xen/memory.h>
 
 #define active_evtchns(cpu,sh,idx)              \
     ((sh)->evtchn_pending[idx] &                \
@@ -37,6 +38,8 @@
 int in_callback;
 
 #ifndef CONFIG_PARAVIRT
+extern shared_info_t shared_info;
+
 int hvm_get_parameter(int idx, uint64_t *value)
 {
     struct xen_hvm_param xhv;
@@ -60,6 +63,20 @@ int hvm_set_parameter(int idx, uint64_t value)
     xhv.index = idx;
     xhv.value = value;
     return HYPERVISOR_hvm_op(HVMOP_set_param, &xhv);
+}
+
+shared_info_t *map_shared_info(void *p)
+{
+    struct xen_add_to_physmap xatp;
+
+    xatp.domid = DOMID_SELF;
+    xatp.idx = 0;
+    xatp.space = XENMAPSPACE_shared_info;
+    xatp.gpfn = virt_to_pfn(&shared_info);
+    if ( HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp) != 0 )
+        BUG();
+
+    return &shared_info;
 }
 #endif
 

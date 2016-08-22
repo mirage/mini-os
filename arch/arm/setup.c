@@ -21,8 +21,6 @@ union start_info_union start_info_union;
  */
 shared_info_t *HYPERVISOR_shared_info;
 
-extern char shared_info_page[PAGE_SIZE];
-
 void *device_tree;
 
 /*
@@ -30,7 +28,6 @@ void *device_tree;
  */
 void arch_init(void *dtb_pointer, uint32_t physical_offset)
 {
-    struct xen_add_to_physmap xatp;
     int r;
 
     memset(&__bss_start, 0, &_end - &__bss_start);
@@ -48,13 +45,7 @@ void arch_init(void *dtb_pointer, uint32_t physical_offset)
     device_tree = dtb_pointer;
 
     /* Map shared_info page */
-    xatp.domid = DOMID_SELF;
-    xatp.idx = 0;
-    xatp.space = XENMAPSPACE_shared_info;
-    xatp.gpfn = virt_to_pfn(shared_info_page);
-    if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp) != 0)
-        BUG();
-    HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
+    HYPERVISOR_shared_info = map_shared_info(NULL);
 
     /* Fill in start_info */
     get_console(NULL);

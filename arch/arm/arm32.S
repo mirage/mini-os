@@ -151,8 +151,8 @@ stage2:
 .pushsection .bss
 @ Note: calling arch_init zeroes out this region.
 .align 12
-.globl shared_info_page
-shared_info_page:
+.globl shared_info
+shared_info:
 	.fill (1024), 4, 0x0
 
 .align 3

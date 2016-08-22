@@ -60,20 +60,6 @@ extern char shared_info[PAGE_SIZE];
     ((pte_t) {(unsigned long)(_x), (unsigned long)(_x>>32)}); })
 #endif
 
-static
-shared_info_t *map_shared_info(unsigned long pa)
-{
-    int rc;
-
-	if ( (rc = HYPERVISOR_update_va_mapping(
-              (unsigned long)shared_info, __pte(pa | 7), UVMF_INVLPG)) )
-	{
-		printk("Failed to map shared_info!! rc=%d\n", rc);
-		do_exit();
-	}
-	return (shared_info_t *)shared_info;
-}
-
 static inline void fpu_init(void) {
 	asm volatile("fninit");
 }
@@ -89,6 +75,21 @@ static inline void sse_init(void) {
 
 #ifdef CONFIG_PARAVIRT
 #define hpc_init()
+
+shared_info_t *map_shared_info(void *p)
+{
+    int rc;
+    start_info_t *si = p;
+    unsigned long pa = si->shared_info;
+
+    if ( (rc = HYPERVISOR_update_va_mapping((unsigned long)shared_info,
+                                            __pte(pa | 7), UVMF_INVLPG)) )
+    {
+        printk("Failed to map shared_info!! rc=%d\n", rc);
+        do_exit();
+    }
+    return (shared_info_t *)shared_info;
+}
 
 static void get_cmdline(void *p)
 {
@@ -156,6 +157,10 @@ arch_init(void *par)
 	get_console(par);
 	get_xenbus(par);
 	get_cmdline(par);
+
+	/* Grab the shared_info pointer and put it in a safe place. */
+	HYPERVISOR_shared_info = map_shared_info(par);
+
 	si = par;
 	memcpy(&start_info, si, sizeof(*si));
 
@@ -163,7 +168,7 @@ arch_init(void *par)
 	printk("Xen Minimal OS!\n");
 	printk("  start_info: %p(VA)\n", si);
 	printk("    nr_pages: 0x%lx\n", si->nr_pages);
-	printk("  shared_inf: 0x%08lx(MA)\n", si->shared_info);
+	printk("  shared_inf: %p(VA)\n", HYPERVISOR_shared_info);
 	printk("     pt_base: %p(VA)\n", (void *)si->pt_base);
 	printk("nr_pt_frames: 0x%lx\n", si->nr_pt_frames);
 	printk("    mfn_list: %p(VA)\n", (void *)si->mfn_list);
@@ -172,9 +177,6 @@ arch_init(void *par)
 	printk("       flags: 0x%x\n", (unsigned int)si->flags);
 	printk("    cmd_line: %s\n", cmdline);
 	printk("       stack: %p-%p\n", stack, stack + sizeof(stack));
-
-	/* Grab the shared_info pointer and put it in a safe place. */
-	HYPERVISOR_shared_info = map_shared_info(start_info.shared_info);
 
 	start_kernel();
 }
