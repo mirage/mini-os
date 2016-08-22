@@ -31,6 +31,7 @@
 #include <mini-os/kernel.h>
 #include <xen/xen.h>
 #include <xen/arch-x86/cpuid.h>
+#include <xen/arch-x86/hvm/start_info.h>
 
 /*
  * Shared page for communicating with the hypervisor.
@@ -88,6 +89,13 @@ static inline void sse_init(void) {
 
 #ifdef CONFIG_PARAVIRT
 #define hpc_init()
+
+static void get_cmdline(void *p)
+{
+    start_info_t *si = p;
+
+    strncpy(cmdline, (char *)si->cmd_line, MAX_CMDLINE_SIZE - 1);
+}
 #else
 static void hpc_init(void)
 {
@@ -108,6 +116,14 @@ static void hpc_init(void)
     cpuid(base + 2, &eax, &ebx, &ecx, &edx);
     wrmsrl(ebx, (unsigned long)&hypercall_page);
     barrier();
+}
+
+static void get_cmdline(void *p)
+{
+    struct hvm_start_info *si = p;
+
+    if ( si->cmdline_paddr )
+        strncpy(cmdline, to_virt(si->cmdline_paddr), MAX_CMDLINE_SIZE - 1);
 }
 #endif
 
@@ -139,6 +155,7 @@ arch_init(void *par)
 	   shared_info. Use xprintk instead. */
 	get_console(par);
 	get_xenbus(par);
+	get_cmdline(par);
 	si = par;
 	memcpy(&start_info, si, sizeof(*si));
 
@@ -153,8 +170,7 @@ arch_init(void *par)
 	printk("   mod_start: 0x%lx(VA)\n", si->mod_start);
 	printk("     mod_len: %lu\n", si->mod_len);
 	printk("       flags: 0x%x\n", (unsigned int)si->flags);
-	printk("    cmd_line: %s\n",
-			si->cmd_line ? (const char *)si->cmd_line : "NULL");
+	printk("    cmd_line: %s\n", cmdline);
 	printk("       stack: %p-%p\n", stack, stack + sizeof(stack));
 
 	/* Grab the shared_info pointer and put it in a safe place. */

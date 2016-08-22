@@ -48,6 +48,7 @@
 #include <xen/version.h>
 
 uint8_t xen_features[XENFEAT_NR_SUBMAPS * 32];
+char cmdline[MAX_CMDLINE_SIZE];
 
 void setup_xen_features(void)
 {

@@ -6,6 +6,7 @@
 
 #ifdef HAVE_LIBC
 #include <os.h>
+#include <kernel.h>
 #include <sched.h>
 #include <console.h>
 #include <netfront.h>
@@ -134,7 +135,7 @@ static void call_main(void *p)
 #define PARSE_ARGS_COUNT(ARGS) PARSE_ARGS(ARGS, argc++, c++, )
 #define PARSE_ARGS_STORE(ARGS) PARSE_ARGS(ARGS, argv[argc++] = c, memmove(c, c + 1, strlen(c + 1) + 1), *c++ = 0)
 
-    PARSE_ARGS_COUNT((char*)start_info.cmd_line);
+    PARSE_ARGS_COUNT(cmdline);
 #ifdef CONFIG_QEMU_XS_ARGS
     PARSE_ARGS_COUNT(domargs);
 #endif
@@ -143,7 +144,7 @@ static void call_main(void *p)
     argv[0] = "main";
     argc = 1;
 
-    PARSE_ARGS_STORE((char*)start_info.cmd_line)
+    PARSE_ARGS_STORE(cmdline)
 #ifdef CONFIG_QEMU_XS_ARGS
     PARSE_ARGS_STORE(domargs)
 #endif
