@@ -151,6 +151,7 @@ static void print_start_of_day(void *p)
     printk("       flags: 0x%x\n", (unsigned int)si->flags);
     printk("    cmd_line: %s\n", cmdline);
     printk("       stack: %p-%p\n", stack, stack + sizeof(stack));
+    arch_print_memmap();
 }
 #endif
 

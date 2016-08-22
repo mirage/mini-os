@@ -7,6 +7,14 @@
 #include <lib.h>
 
 uint32_t physical_address_offset;
+struct e820entry e820_map[1] = {
+    {
+        .addr = 0,
+        .size = ULONG_MAX - 1,
+        .type = E820_RAM
+    }
+};
+unsigned e820_entries = 1;
 
 unsigned long allocate_ondemand(unsigned long n, unsigned long alignment)
 {

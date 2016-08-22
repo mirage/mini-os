@@ -43,6 +43,7 @@
 #include <mini-os/types.h>
 #include <mini-os/lib.h>
 #include <mini-os/xmalloc.h>
+#include <mini-os/e820.h>
 #include <xen/memory.h>
 
 #ifdef MM_DEBUG
@@ -63,6 +64,15 @@ extern char stack[];
 extern void page_walk(unsigned long va);
 
 #ifdef CONFIG_PARAVIRT
+struct e820entry e820_map[1] = {
+    {
+        .addr = 0,
+        .size = ULONG_MAX - 1,
+        .type = E820_RAM
+    }
+};
+unsigned e820_entries = 1;
+
 void arch_mm_preinit(void *p)
 {
     start_info_t *si = p;
@@ -102,10 +112,25 @@ desc_ptr idt_ptr =
     .base = (unsigned long)&idt,
 };
 
+struct e820entry e820_map[E820_MAX];
+unsigned e820_entries;
+
+static char *e820_types[E820_TYPES] = {
+    [E820_RAM]      = "RAM",
+    [E820_RESERVED] = "Reserved",
+    [E820_ACPI]     = "ACPI",
+    [E820_NVS]      = "NVS",
+    [E820_UNUSABLE] = "Unusable",
+    [E820_PMEM]     = "PMEM"
+};
+
 void arch_mm_preinit(void *p)
 {
     long ret;
     domid_t domid = DOMID_SELF;
+    struct xen_memory_map memmap;
+    int i;
+    unsigned long pfn, max = 0;
 
     pt_base = page_table_base;
     first_free_pfn = PFN_UP(to_phys(&_end));
@@ -116,6 +141,53 @@ void arch_mm_preinit(void *p)
         do_exit();
     }
     last_free_pfn = ret;
+
+    memmap.nr_entries = E820_MAX;
+    set_xen_guest_handle(memmap.buffer, e820_map);
+    ret = HYPERVISOR_memory_op(XENMEM_memory_map, &memmap);
+    if ( ret < 0 )
+    {
+        xprintk("could not get memory map\n");
+        do_exit();
+    }
+    e820_entries = memmap.nr_entries;
+
+    for ( i = 0; i < e820_entries; i++ )
+    {
+        if ( e820_map[i].type != E820_RAM )
+            continue;
+        pfn = (e820_map[i].addr + e820_map[i].size) >> PAGE_SHIFT;
+        if ( pfn > max )
+            max = pfn;
+    }
+
+    if ( max < last_free_pfn )
+        last_free_pfn = max;
+}
+
+void arch_print_memmap(void)
+{
+    int i;
+    unsigned long from, to;
+    char *type;
+    char buf[12];
+
+    printk("Memory map:\n");
+    for ( i = 0; i < e820_entries; i++ )
+    {
+        if ( e820_map[i].type >= E820_TYPES || !e820_types[e820_map[i].type] )
+        {
+            snprintf(buf, sizeof(buf), "%8x", e820_map[i].type);
+            type = buf;
+        }
+        else
+        {
+            type = e820_types[e820_map[i].type];
+        }
+        from = e820_map[i].addr;
+        to = from + e820_map[i].size - 1;
+        printk("%012lx-%012lx: %s\n", from, to, type);
+    }
 }
 #endif
 

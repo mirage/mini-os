@@ -43,6 +43,7 @@
 #include <mini-os/types.h>
 #include <mini-os/lib.h>
 #include <mini-os/xmalloc.h>
+#include <mini-os/e820.h>
 
 /*********************
  * ALLOCATION BITMAP
@@ -147,10 +148,14 @@ static chunk_head_t  free_tail[FREELIST_SIZE];
  */
 static void init_page_allocator(unsigned long min, unsigned long max)
 {
-    int i;
+    int i, m;
     unsigned long range;
+    unsigned long r_min, r_max;
     chunk_head_t *ch;
     chunk_tail_t *ct;
+
+    printk("MM: Initialise page allocator for %lx(%lx)-%lx(%lx)\n",
+           (u_long)to_virt(min), min, (u_long)to_virt(max), max);
     for ( i = 0; i < FREELIST_SIZE; i++ )
     {
         free_head[i]       = &free_tail[i];
@@ -166,38 +171,57 @@ static void init_page_allocator(unsigned long min, unsigned long max)
     mm_alloc_bitmap_size  = round_pgup(mm_alloc_bitmap_size);
     mm_alloc_bitmap = (unsigned long *)to_virt(min);
     min         += mm_alloc_bitmap_size;
-    range        = max - min;
 
     /* All allocated by default. */
     memset(mm_alloc_bitmap, ~0, mm_alloc_bitmap_size);
-    /* Free up the memory we've been given to play with. */
-    map_free(PHYS_PFN(min), range>>PAGE_SHIFT);
 
-    /* The buddy lists are addressed in high memory. */
-    min = (unsigned long) to_virt(min);
-    max = (unsigned long) to_virt(max);
-
-    while ( range != 0 )
+    for ( m = 0; m < e820_entries; m++ )
     {
-        /*
-         * Next chunk is limited by alignment of min, but also
-         * must not be bigger than remaining range.
-         */
-        for ( i = PAGE_SHIFT; (1UL<<(i+1)) <= range; i++ )
-            if ( min & (1UL<<i) ) break;
+        if ( e820_map[m].type != E820_RAM )
+            continue;
+        if ( e820_map[m].addr + e820_map[m].size >= ULONG_MAX )
+            BUG();
 
+        r_min = e820_map[m].addr;
+        r_max = r_min + e820_map[m].size;
+        if ( r_max <= min || r_min >= max )
+            continue;
+        if ( r_min < min )
+            r_min = min;
+        if ( r_max > max )
+            r_max = max;
 
-        ch = (chunk_head_t *)min;
-        min   += (1UL<<i);
-        range -= (1UL<<i);
-        ct = (chunk_tail_t *)min-1;
-        i -= PAGE_SHIFT;
-        ch->level       = i;
-        ch->next        = free_head[i];
-        ch->pprev       = &free_head[i];
-        ch->next->pprev = &ch->next;
-        free_head[i]    = ch;
-        ct->level       = i;
+        printk("    Adding memory range %lx-%lx\n", r_min, r_max);
+
+        /* The buddy lists are addressed in high memory. */
+        r_min = (unsigned long)to_virt(r_min);
+        r_max = (unsigned long)to_virt(r_max);
+        range = r_max - r_min;
+
+        /* Free up the memory we've been given to play with. */
+        map_free(PHYS_PFN(r_min), range >> PAGE_SHIFT);
+
+        while ( range != 0 )
+        {
+            /*
+             * Next chunk is limited by alignment of min, but also
+             * must not be bigger than remaining range.
+             */
+            for ( i = PAGE_SHIFT; (1UL << (i + 1)) <= range; i++ )
+                if ( r_min & (1UL << i) ) break;
+
+            ch = (chunk_head_t *)r_min;
+            r_min += 1UL << i;
+            range -= 1UL << i;
+            ct = (chunk_tail_t *)r_min - 1;
+            i -= PAGE_SHIFT;
+            ch->level       = i;
+            ch->next        = free_head[i];
+            ch->pprev       = &free_head[i];
+            ch->next->pprev = &ch->next;
+            free_head[i]    = ch;
+            ct->level       = i;
+        }
     }
 
     mm_alloc_bitmap_remap();
@@ -377,9 +401,6 @@ void init_mm(void)
     /*
      * now we can initialise the page allocator
      */
-    printk("MM: Initialise page allocator for %lx(%lx)-%lx(%lx)\n",
-           (u_long)to_virt(PFN_PHYS(start_pfn)), (u_long)PFN_PHYS(start_pfn),
-           (u_long)to_virt(PFN_PHYS(max_pfn)), (u_long)PFN_PHYS(max_pfn));
     init_page_allocator(PFN_PHYS(start_pfn), PFN_PHYS(max_pfn));
     printk("MM: done\n");
 
