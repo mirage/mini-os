@@ -9,13 +9,6 @@
 #include <libfdt.h>
 
 /*
- * This structure contains start-of-day info, such as pagetable base pointer,
- * address of the shared_info structure, and things like that.
- * On x86, the hypervisor passes it to us. On ARM, we fill it in ourselves.
- */
-union start_info_union start_info_union;
-
-/*
  * Shared page for communicating with the hypervisor.
  * Events flags go here, for example.
  */
@@ -47,7 +40,6 @@ void arch_init(void *dtb_pointer, uint32_t physical_offset)
     /* Map shared_info page */
     HYPERVISOR_shared_info = map_shared_info(NULL);
 
-    /* Fill in start_info */
     get_console(NULL);
     get_xenbus(NULL);
 

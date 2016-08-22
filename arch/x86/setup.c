@@ -40,12 +40,6 @@
 shared_info_t *HYPERVISOR_shared_info;
 
 /*
- * This structure contains start-of-day info, such as pagetable base pointer,
- * address of the shared_info structure, and things like that.
- */
-union start_info_union start_info_union;
-
-/*
  * Just allocate the kernel stack here. SS:ESP is set up to point here
  * in head.S.
  */
@@ -151,7 +145,6 @@ arch_init(void *par)
 	/* Setup memory management info from start_info. */
 	arch_mm_preinit(par);
 
-	/* Copy the start_info struct to a globally-accessible area. */
 	/* WARN: don't do printk before here, it uses information from
 	   shared_info. Use xprintk instead. */
 	get_console(par);
@@ -162,7 +155,6 @@ arch_init(void *par)
 	HYPERVISOR_shared_info = map_shared_info(par);
 
 	si = par;
-	memcpy(&start_info, si, sizeof(*si));
 
 	/* print out some useful information  */
 	printk("Xen Minimal OS!\n");

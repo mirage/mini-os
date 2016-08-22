@@ -60,7 +60,7 @@ void run_server(void *p)
 }
 
 
-int app_main(start_info_t *si)
+int app_main(void *p)
 {
     create_thread("server", run_server, NULL);
     return 0;

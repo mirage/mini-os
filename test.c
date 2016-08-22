@@ -552,28 +552,28 @@ static void shutdown_thread(void *p)
 }
 #endif
 
-int app_main(start_info_t *si)
+int app_main(void *p)
 {
-    printk("Test main: start_info=%p\n", si);
+    printk("Test main: par=%p\n", p);
 #ifdef CONFIG_XENBUS
-    create_thread("xenbus_tester", xenbus_tester, si);
+    create_thread("xenbus_tester", xenbus_tester, p);
 #endif
-    create_thread("periodic_thread", periodic_thread, si);
+    create_thread("periodic_thread", periodic_thread, p);
 #ifdef CONFIG_NETFRONT
-    create_thread("netfront", netfront_thread, si);
+    create_thread("netfront", netfront_thread, p);
 #endif
 #ifdef CONFIG_BLKFRONT
-    create_thread("blkfront", blkfront_thread, si);
+    create_thread("blkfront", blkfront_thread, p);
 #endif
 #if defined(CONFIG_FBFRONT) && defined(CONFIG_KBDFRONT)
-    create_thread("fbfront", fbfront_thread, si);
-    create_thread("kbdfront", kbdfront_thread, si);
+    create_thread("fbfront", fbfront_thread, p);
+    create_thread("kbdfront", kbdfront_thread, p);
 #endif
 #ifdef CONFIG_PCIFRONT
-    create_thread("pcifront", pcifront_thread, si);
+    create_thread("pcifront", pcifront_thread, p);
 #endif
 #ifdef CONFIG_XENBUS
-    create_thread("shutdown", shutdown_thread, si);
+    create_thread("shutdown", shutdown_thread, p);
 #endif
     return 0;
 }

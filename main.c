@@ -185,10 +185,10 @@ void _exit(int ret)
     do_exit();
 }
 
-int app_main(start_info_t *si)
+int app_main(void *p)
 {
-    printk("main.c: dummy main: start_info=%p\n", si);
-    main_thread = create_thread("main", call_main, si);
+    printk("main.c: dummy main: par=%p\n", p);
+    main_thread = create_thread("main", call_main, p);
     return 0;
 }
 #endif
