@@ -91,6 +91,24 @@ static void get_cmdline(void *p)
 
     strncpy(cmdline, (char *)si->cmd_line, MAX_CMDLINE_SIZE - 1);
 }
+
+static void print_start_of_day(void *p)
+{
+    start_info_t *si = p;
+
+    printk("Xen Minimal OS (pv)!\n");
+    printk("  start_info: %p(VA)\n", si);
+    printk("    nr_pages: 0x%lx\n", si->nr_pages);
+    printk("  shared_inf: 0x%08lx(MA)\n", si->shared_info);
+    printk("     pt_base: %p(VA)\n", (void *)si->pt_base);
+    printk("nr_pt_frames: 0x%lx\n", si->nr_pt_frames);
+    printk("    mfn_list: %p(VA)\n", (void *)si->mfn_list);
+    printk("   mod_start: 0x%lx(VA)\n", si->mod_start);
+    printk("     mod_len: %lu\n", si->mod_len);
+    printk("       flags: 0x%x\n", (unsigned int)si->flags);
+    printk("    cmd_line: %s\n", cmdline);
+    printk("       stack: %p-%p\n", stack, stack + sizeof(stack));
+}
 #else
 static void hpc_init(void)
 {
@@ -120,6 +138,20 @@ static void get_cmdline(void *p)
     if ( si->cmdline_paddr )
         strncpy(cmdline, to_virt(si->cmdline_paddr), MAX_CMDLINE_SIZE - 1);
 }
+
+static void print_start_of_day(void *p)
+{
+    struct hvm_start_info *si = p;
+
+    printk("Xen Minimal OS (hvm)!\n");
+    printk("  start_info: %p(VA)\n", si);
+    printk("  shared_inf: %p(VA)\n", HYPERVISOR_shared_info);
+    printk("     modlist: 0x%lx(PA)\n", (unsigned long)si->modlist_paddr);
+    printk("  nr_modules: %u\n", si->nr_modules);
+    printk("       flags: 0x%x\n", (unsigned int)si->flags);
+    printk("    cmd_line: %s\n", cmdline);
+    printk("       stack: %p-%p\n", stack, stack + sizeof(stack));
+}
 #endif
 
 /*
@@ -129,7 +161,6 @@ void
 arch_init(void *par)
 {
 	static char hello[] = "Bootstrapping...\n";
-	start_info_t *si;
 
 	hpc_init();
 	(void)HYPERVISOR_console_io(CONSOLEIO_write, strlen(hello), hello);
@@ -154,21 +185,8 @@ arch_init(void *par)
 	/* Grab the shared_info pointer and put it in a safe place. */
 	HYPERVISOR_shared_info = map_shared_info(par);
 
-	si = par;
-
 	/* print out some useful information  */
-	printk("Xen Minimal OS!\n");
-	printk("  start_info: %p(VA)\n", si);
-	printk("    nr_pages: 0x%lx\n", si->nr_pages);
-	printk("  shared_inf: %p(VA)\n", HYPERVISOR_shared_info);
-	printk("     pt_base: %p(VA)\n", (void *)si->pt_base);
-	printk("nr_pt_frames: 0x%lx\n", si->nr_pt_frames);
-	printk("    mfn_list: %p(VA)\n", (void *)si->mfn_list);
-	printk("   mod_start: 0x%lx(VA)\n", si->mod_start);
-	printk("     mod_len: %lu\n", si->mod_len);
-	printk("       flags: 0x%x\n", (unsigned int)si->flags);
-	printk("    cmd_line: %s\n", cmdline);
-	printk("       stack: %p-%p\n", stack, stack + sizeof(stack));
+	print_start_of_day(par);
 
 	start_kernel();
 }
