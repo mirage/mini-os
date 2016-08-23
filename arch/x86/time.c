@@ -212,17 +212,20 @@ void block_domain(s_time_t until)
     if(monotonic_clock() < until)
     {
         HYPERVISOR_set_timer_op(until);
+#ifdef CONFIG_PARAVIRT
         HYPERVISOR_sched_op(SCHEDOP_block, 0);
+#else
+        local_irq_enable();
+        asm volatile ( "hlt" : : : "memory" );
+#endif
         local_irq_disable();
+        HYPERVISOR_set_timer_op(0);
     }
 }
 
-
-/*
- * Just a dummy
- */
 static void timer_handler(evtchn_port_t ev, struct pt_regs *regs, void *ign)
 {
+    HYPERVISOR_set_timer_op(monotonic_clock() + MILLISECS(1));
 }
 
 
