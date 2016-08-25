@@ -3,9 +3,7 @@
 #include <mini-os/asm_macros.h>
 #include <mini-os/arch_mm.h>
 #include <mini-os/desc.h>
-#include <xen/arch-x86_32.h>
 #include <xen/elfnote.h>
-#include <xen/arch-x86_32.h>
 
 #ifdef CONFIG_PARAVIRT
 
