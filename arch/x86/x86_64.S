@@ -165,7 +165,7 @@ KERNEL_CS_MASK = 0xfc
  * Exception entry point. This expects an error code/orig_rax on the stack
  * and the exception handler in %rax.	
  */ 		  				
-ENTRY(error_entry)
+error_entry:
 	SAVE_ALL
 
 	movq %rsp,%rdi
@@ -182,7 +182,7 @@ ENTRY(error_entry)
 ENTRY(hypervisor_callback)
 	zeroentry hypervisor_callback2
 
-ENTRY(hypervisor_callback2)
+hypervisor_callback2:
 	movq %rdi, %rsp
 
 	/* check against event re-entrant */
