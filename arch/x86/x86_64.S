@@ -101,27 +101,23 @@ KERNEL_CS_MASK = 0xfc
 .endm
 
 .macro RESTORE_ALL
-	movq (%rsp),%r11
-	movq 1*8(%rsp),%r10
-	movq 2*8(%rsp),%r9
-	movq 3*8(%rsp),%r8
-	movq 4*8(%rsp),%rax
-	movq 5*8(%rsp),%rcx
-	movq 6*8(%rsp),%rdx
-	movq 7*8(%rsp),%rsi
-	movq 8*8(%rsp),%rdi
-	addq $9*8+8,%rsp
-.endm	
-
-.macro RESTORE_REST
 	movq (%rsp),%r15
 	movq 1*8(%rsp),%r14
 	movq 2*8(%rsp),%r13
 	movq 3*8(%rsp),%r12
 	movq 4*8(%rsp),%rbp
 	movq 5*8(%rsp),%rbx
-	addq $6*8,%rsp
-.endm
+	movq 6*8(%rsp),%r11
+	movq 7*8(%rsp),%r10
+	movq 8*8(%rsp),%r9
+	movq 9*8(%rsp),%r8
+	movq 10*8(%rsp),%rax
+	movq 11*8(%rsp),%rcx
+	movq 12*8(%rsp),%rdx
+	movq 13*8(%rsp),%rsi
+	movq 14*8(%rsp),%rdi
+	addq $15*8+8,%rsp
+.endm	
 
 .macro SAVE_REST
 	subq $6*8,%rsp
@@ -219,12 +215,10 @@ error_exit:
 	jnz restore_all_enable_events	#        != 0 => enable event delivery
 	XEN_PUT_VCPU_INFO(%rsi)
 
-	RESTORE_REST
 	RESTORE_ALL
 	HYPERVISOR_IRET 0
 
 restore_all_enable_events:
-	RESTORE_REST
 	RESTORE_ALL
 	pushq %rax                      # save rax for it will be clobbered later
 	RSP_OFFSET=8                    # record the stack frame layout changes
@@ -289,7 +283,6 @@ critical_region_fixup:
 
 #else
 error_exit:
-	RESTORE_REST
 	RESTORE_ALL
 	HYPERVISOR_IRET 0
 
