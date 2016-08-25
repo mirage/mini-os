@@ -177,7 +177,6 @@ ENTRY(error_entry)
 	movq %r14,1*8(%rsp) 
 	movq %r15,(%rsp) 
 
-error_call_handler:
 	movq %rdi, RDI(%rsp)
 	movq %rsp,%rdi
 	movq ORIG_RAX(%rsp),%rsi	# get error code 
@@ -212,7 +211,6 @@ ENTRY(hypervisor_callback2)
 	decl %gs:0
 
 error_exit:
-retint_kernel:
 	movl RFLAGS(%rsp), %eax
 	shr $9, %eax			# EAX[0] == IRET_RFLAGS.IF
 	XEN_GET_VCPU_INFO(%rsi)
@@ -221,7 +219,6 @@ retint_kernel:
 	jnz restore_all_enable_events	#        != 0 => enable event delivery
 	XEN_PUT_VCPU_INFO(%rsi)
 
-retint_restore_args:
 	RESTORE_REST
 	RESTORE_ALL
 	HYPERVISOR_IRET 0
