@@ -119,14 +119,26 @@ KERNEL_CS_MASK = 0xfc
 	addq $15*8+8,%rsp
 .endm	
 
-.macro SAVE_REST
-	subq $6*8,%rsp
+.macro SAVE_ALL
+	/* rdi slot contains rax, oldrax contains error code */
+	cld
+	subq $14*8,%rsp
+	movq %rsi,13*8(%rsp)
+	movq 14*8(%rsp),%rsi	/* load rax from rdi slot */
+	movq %rdx,12*8(%rsp)
+	movq %rcx,11*8(%rsp)
+	movq %rsi,10*8(%rsp)	/* store rax */
+	movq %r8, 9*8(%rsp)
+	movq %r9, 8*8(%rsp)
+	movq %r10,7*8(%rsp)
+	movq %r11,6*8(%rsp)
 	movq %rbx,5*8(%rsp)
 	movq %rbp,4*8(%rsp)
 	movq %r12,3*8(%rsp)
 	movq %r13,2*8(%rsp)
 	movq %r14,1*8(%rsp)
 	movq %r15,(%rsp)
+	movq %rdi, RDI(%rsp)	/* put rdi into the slot */
 .endm
 
 .macro HYPERVISOR_IRET flag
@@ -154,26 +166,8 @@ KERNEL_CS_MASK = 0xfc
  * and the exception handler in %rax.	
  */ 		  				
 ENTRY(error_entry)
-	/* rdi slot contains rax, oldrax contains error code */
-	cld	
-	subq  $14*8,%rsp
-	movq %rsi,13*8(%rsp)
-	movq 14*8(%rsp),%rsi	/* load rax from rdi slot */
-	movq %rdx,12*8(%rsp)
-	movq %rcx,11*8(%rsp)
-	movq %rsi,10*8(%rsp)	/* store rax */ 
-	movq %r8, 9*8(%rsp)
-	movq %r9, 8*8(%rsp)
-	movq %r10,7*8(%rsp)
-	movq %r11,6*8(%rsp)
-	movq %rbx,5*8(%rsp) 
-	movq %rbp,4*8(%rsp) 
-	movq %r12,3*8(%rsp) 
-	movq %r13,2*8(%rsp) 
-	movq %r14,1*8(%rsp) 
-	movq %r15,(%rsp) 
+	SAVE_ALL
 
-	movq %rdi, RDI(%rsp)
 	movq %rsp,%rdi
 	movq ORIG_RAX(%rsp),%rsi	# get error code 
 	movq $-1,ORIG_RAX(%rsp)
