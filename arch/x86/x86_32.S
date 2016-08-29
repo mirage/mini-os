@@ -111,7 +111,6 @@ do_exception:
     jmp ret_from_exception
     
 ret_from_exception:
-    movb CS(%esp),%cl
     addl $8,%esp
     RESTORE_ALL
 
@@ -140,11 +139,7 @@ ENTRY(hypervisor_callback)
         call do_hypervisor_callback
         add  $4,%esp
         movl HYPERVISOR_shared_info,%esi
-        xorl %eax,%eax
-        movb CS(%esp),%cl
-    	test $2,%cl          # slow return to ring 2 or 3
-        jne  safesti
-safesti:movb $0,1(%esi)     # reenable event callbacks
+        movb $0,1(%esi)     # reenable event callbacks
 scrit:  /**** START OF CRITICAL REGION ****/
         testb $0xFF,(%esi)
         jnz  14f              # process more events if necessary...
