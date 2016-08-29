@@ -63,16 +63,6 @@ static int threads_started;
 
 struct thread *main_thread;
 
-void inline print_runqueue(void)
-{
-    struct thread *th;
-    MINIOS_TAILQ_FOREACH(th, &thread_list, thread_list)
-    {
-        printk("   Thread \"%s\", runnable=%d\n", th->name, is_runnable(th));
-    }
-    printk("\n");
-}
-
 void schedule(void)
 {
     struct thread *prev, *next, *thread, *tmp;
@@ -244,44 +234,6 @@ void idle_thread_fn(void *unused)
         schedule();
     }
 }
-
-DECLARE_MUTEX(mutex);
-
-void th_f1(void *data)
-{
-    struct timeval tv1, tv2;
-
-    for(;;)
-    {
-        down(&mutex);
-        printk("Thread \"%s\" got semaphore, runnable %d\n", current->name, is_runnable(current));
-        schedule();
-        printk("Thread \"%s\" releases the semaphore\n", current->name);
-        up(&mutex);
-        
-        
-        gettimeofday(&tv1, NULL);
-        for(;;)
-        {
-            gettimeofday(&tv2, NULL);
-            if(tv2.tv_sec - tv1.tv_sec > 2) break;
-        }
-                
-        
-        schedule(); 
-    }
-}
-
-void th_f2(void *data)
-{
-    for(;;)
-    {
-        printk("Thread OTHER executing, data 0x%p\n", data);
-        schedule();
-    }
-}
-
-
 
 void init_sched(void)
 {
