@@ -45,20 +45,9 @@ hypercall_page:
 
 
 #define XEN_GET_VCPU_INFO(reg)	movq HYPERVISOR_shared_info,reg
-#define XEN_PUT_VCPU_INFO(reg)
-#define XEN_PUT_VCPU_INFO_fixup
 #define XEN_LOCKED_BLOCK_EVENTS(reg)	movb $1,evtchn_upcall_mask(reg)
 #define XEN_LOCKED_UNBLOCK_EVENTS(reg)	movb $0,evtchn_upcall_mask(reg)
 #define XEN_TEST_PENDING(reg)	testb $0xFF,evtchn_upcall_pending(reg)
-
-#define XEN_BLOCK_EVENTS(reg)	XEN_GET_VCPU_INFO(reg)			; \
-                    			XEN_LOCKED_BLOCK_EVENTS(reg)	; \
-    				            XEN_PUT_VCPU_INFO(reg)
-
-#define XEN_UNBLOCK_EVENTS(reg)	XEN_GET_VCPU_INFO(reg)			; \
-                				XEN_LOCKED_UNBLOCK_EVENTS(reg)	; \
-    			            	XEN_PUT_VCPU_INFO(reg)
-
 
 /* Offsets into shared_info_t. */                
 #define evtchn_upcall_pending		/* 0 */
@@ -77,12 +66,15 @@ KERNEL_CS_MASK = 0xfc
 
 
 /* Macros */
-.macro zeroentry sym
+.macro SAVE_PARAVIRT
 #ifdef CONFIG_PARAVIRT
-	movq (%rsp),%rcx
-	movq 8(%rsp),%r11
-	addq $0x10,%rsp /* skip rcx and r11 */
+	pop %rcx
+	pop %r11 /* rsp points to the error code */
 #endif
+.endm
+
+.macro zeroentry sym
+	SAVE_PARAVIRT
 	pushq $0	/* push error code/oldrax */
 	pushq %rax	/* push real oldrax to the rdi slot */
 	leaq  \sym(%rip),%rax
@@ -90,11 +82,7 @@ KERNEL_CS_MASK = 0xfc
 .endm
 
 .macro errorentry sym
-#ifdef CONFIG_PARAVIRT
-	movq (%rsp),%rcx
-	movq 8(%rsp),%r11
-	addq $0x10,%rsp /* rsp points to the error code */
-#endif
+	SAVE_PARAVIRT
 	pushq %rax
 	leaq  \sym(%rip),%rax
 	jmp error_entry
@@ -141,7 +129,7 @@ KERNEL_CS_MASK = 0xfc
 	movq %rdi, RDI(%rsp)	/* put rdi into the slot */
 .endm
 
-.macro HYPERVISOR_IRET flag
+.macro HYPERVISOR_IRET
 #ifdef CONFIG_PARAVIRT
 	testl $NMI_MASK,2*8(%rsp)
 	jnz   2f
@@ -155,7 +143,7 @@ KERNEL_CS_MASK = 0xfc
 #ifdef CONFIG_PARAVIRT
 2:	/* Slow iret via hypervisor. */
 	andl  $~NMI_MASK, 16(%rsp)
-	pushq $\flag
+	pushq $0
 	jmp  hypercall_page + (__HYPERVISOR_iret * 32)
 #endif
 .endm
@@ -207,17 +195,16 @@ error_exit:
 	andb evtchn_upcall_mask(%rsi),%al
 	andb $1,%al			# EAX[0] == IRET_RFLAGS.IF & event_mask
 	jnz restore_all_enable_events	#        != 0 => enable event delivery
-	XEN_PUT_VCPU_INFO(%rsi)
 
 	RESTORE_ALL
-	HYPERVISOR_IRET 0
+	HYPERVISOR_IRET
 
 restore_all_enable_events:
 	RESTORE_ALL
 	pushq %rax                      # save rax for it will be clobbered later
 	RSP_OFFSET=8                    # record the stack frame layout changes
 	XEN_GET_VCPU_INFO(%rax)         # safe to use rax since it is saved
-	XEN_UNBLOCK_EVENTS(%rax)
+	XEN_LOCKED_UNBLOCK_EVENTS(%rax)
 
 scrit:	/**** START OF CRITICAL REGION ****/
 	XEN_TEST_PENDING(%rax)
@@ -229,7 +216,7 @@ scrit:	/**** START OF CRITICAL REGION ****/
 restore_end:
 	jnz hypervisor_prologue         # safe to jump out of critical region
 	                                # because events are masked if ZF = 0
-	HYPERVISOR_IRET 0
+	HYPERVISOR_IRET
 ecrit:  /**** END OF CRITICAL REGION ****/
 
 # Set up the stack as Xen does before calling event callback
@@ -278,7 +265,7 @@ critical_region_fixup:
 #else
 error_exit:
 	RESTORE_ALL
-	HYPERVISOR_IRET 0
+	HYPERVISOR_IRET
 
 /*
  * Xen event (virtual interrupt) entry point.
