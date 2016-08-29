@@ -175,7 +175,7 @@ clean:	arch_clean
 
 
 define all_sources
-     ( find . -name SCCS -prune -o -name '*.[chS]' -print )
+     ( find . -name '*.[chS]' -print )
 endef
 
 .PHONY: cscope
