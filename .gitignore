@@ -2,6 +2,13 @@
 *.o
 *.a
 *.swp
+cscope.*
+GPATH
+GRTAGS
+GTAGS
+TAGS
+tags
+
 arch/x86/minios-x86*.lds
 include/list.h
 mini-os
