@@ -33,6 +33,14 @@
 #include <xen/arch-x86/cpuid.h>
 #include <xen/arch-x86/hvm/start_info.h>
 
+#ifdef CONFIG_PARAVIRT
+/*
+ * This structure contains start-of-day info, such as pagetable base pointer,
+ * address of the shared_info structure, and things like that.
+ */
+union start_info_union start_info_union;
+#endif
+
 /*
  * Shared page for communicating with the hypervisor.
  * Events flags go here, for example.
@@ -188,6 +196,10 @@ arch_init(void *par)
 
 	/* print out some useful information  */
 	print_start_of_day(par);
+
+#ifdef CONFIG_PARAVIRT
+	memcpy(&start_info, par, sizeof(start_info));
+#endif
 
 	start_kernel();
 }

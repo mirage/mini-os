@@ -27,7 +27,18 @@
 #include <mini-os/traps.h>
 
 /* hypervisor.c */
-#ifndef CONFIG_PARAVIRT
+#ifdef CONFIG_PARAVIRT
+/*
+ * a placeholder for the start of day information passed up from the hypervisor
+ */
+union start_info_union
+{
+    start_info_t start_info;
+    char padding[512];
+};
+extern union start_info_union start_info_union;
+#define start_info (start_info_union.start_info)
+#else
 int hvm_get_parameter(int idx, uint64_t *value);
 int hvm_set_parameter(int idx, uint64_t value);
 #endif
