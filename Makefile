@@ -190,3 +190,7 @@ tags:
 .PHONY: TAGS
 TAGS:
 	$(all_sources) | xargs etags
+
+.PHONY: gtags
+gtags:
+	$(all_sources) | gtags -f -
