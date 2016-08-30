@@ -13,3 +13,4 @@ arch/x86/minios-x86*.lds
 include/list.h
 mini-os
 mini-os.gz
+minios-config.mk

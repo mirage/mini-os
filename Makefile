@@ -158,6 +158,11 @@ $(OBJ_DIR)/$(TARGET): $(OBJS) $(APP_O) arch_lib $(TARGET_ARCH_DIR)/minios-$(MINI
 	$(LD) $(LDFLAGS) $(LDFLAGS_FINAL) $@.o $(EXTRA_OBJS) -o $@
 	gzip -f -9 -c $@ >$@.gz
 
+.PHONY: config
+CONFIG_FILE ?= $(CURDIR)/minios-config.mk
+config:
+	echo "$(DEFINES-y)" >$(CONFIG_FILE)
+
 .PHONY: clean arch_clean
 
 arch_clean:
