@@ -116,7 +116,7 @@ static paddr_t get_gnttab_base(void)
     return gnttab_base;
 }
 
-grant_entry_t *arch_init_gnttab(int nr_grant_frames)
+grant_entry_v1_t *arch_init_gnttab(int nr_grant_frames)
 {
     struct xen_add_to_physmap xatp;
     struct gnttab_setup_table setup;

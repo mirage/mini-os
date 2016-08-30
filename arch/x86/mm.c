@@ -890,7 +890,7 @@ void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p)
 #endif
 }
 
-grant_entry_t *arch_init_gnttab(int nr_grant_frames)
+grant_entry_v1_t *arch_init_gnttab(int nr_grant_frames)
 {
     struct gnttab_setup_table setup;
     unsigned long frames[nr_grant_frames];

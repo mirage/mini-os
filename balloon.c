@@ -73,8 +73,6 @@ int balloon_up(unsigned long n_pages)
     unsigned long page, pfn;
     int rc;
     struct xen_memory_reservation reservation = {
-        .address_bits = 0,
-        .extent_order = 0,
         .domid        = DOMID_SELF
     };
 
