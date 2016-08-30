@@ -176,11 +176,24 @@ static inline int irqs_disabled(void)
 
 #endif
 
+#ifdef __INSIDE_MINIOS__
 #define local_irq_save(x)	__save_and_cli(x)
 #define local_irq_restore(x)	__restore_flags(x)
 #define local_save_flags(x)	__save_flags(x)
 #define local_irq_disable()	__cli()
 #define local_irq_enable()	__sti()
+#else
+unsigned long __local_irq_save(void);
+void __local_irq_restore(unsigned long flags);
+unsigned long __local_save_flags(void);
+void __local_irq_disable(void);
+void __local_irq_enable(void);
+#define local_irq_save(x)       x = __local_irq_save()
+#define local_irq_restore(x)    __local_irq_restore(x)
+#define local_save_flags(x)     x = __local_save_flags()
+#define local_irq_disable()     __local_irq_disable()
+#define local_irq_enable()      __local_irq_enable()
+#endif
 
 /* This is a barrier for the compiler only, NOT the processor! */
 #define barrier() __asm__ __volatile__("": : :"memory")

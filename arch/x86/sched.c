@@ -135,5 +135,33 @@ void run_idle_thread(void)
 #endif
 }
 
+unsigned long __local_irq_save(void)
+{
+    unsigned long flags;
 
+    local_irq_save(flags);
+    return flags;
+}
 
+void __local_irq_restore(unsigned long flags)
+{
+    local_irq_restore(flags);
+}
+
+unsigned long __local_save_flags(void)
+{
+    unsigned long flags;
+
+    local_save_flags(flags);
+    return flags;
+}
+
+void __local_irq_disable(void)
+{
+    local_irq_disable();
+}
+
+void __local_irq_enable(void)
+{
+    local_irq_enable();
+}
