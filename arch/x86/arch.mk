@@ -3,6 +3,8 @@
 # (including x86_32, x86_32y and x86_64).
 #
 
+MINIOS_TARGET_ARCHS := x86_32 x86_64
+
 ifeq ($(MINIOS_TARGET_ARCH),x86_32)
 ARCH_CFLAGS  := -m32 -march=i686
 ARCH_LDFLAGS := -m elf_i386

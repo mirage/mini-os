@@ -178,6 +178,16 @@ clean:	arch_clean
 	$(RM) $(OBJ_DIR)/lwip.a $(LWO)
 	rm -f tags TAGS
 
+.PHONY: testbuild
+TEST_CONFIGS := $(wildcard $(CURDIR)/$(TARGET_ARCH_DIR)/testbuild/*)
+testbuild:
+	for arch in $(MINIOS_TARGET_ARCHS); do \
+		for conf in $(TEST_CONFIGS); do \
+			$(MAKE) clean; \
+			MINIOS_TARGET_ARCH=$$arch MINIOS_CONFIG=$$conf $(MAKE) || exit 1; \
+		done; \
+	done
+	$(MAKE) clean
 
 define all_sources
      ( find . -name '*.[chS]' -print )
