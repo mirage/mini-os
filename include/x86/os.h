@@ -514,6 +514,11 @@ static __inline__ unsigned long __ffs(unsigned long word)
 #endif /* ifdef __INSIDE_MINIOS */
 
 /********************* common i386 and x86_64  ****************************/
+#define xen_mb()  mb()
+#define xen_rmb() rmb()
+#define xen_wmb() wmb()
+#define xen_barrier() asm volatile ( "" : : : "memory")
+
 #define wrmsr(msr,val1,val2) \
       __asm__ __volatile__("wrmsr" \
                            : /* no outputs */ \

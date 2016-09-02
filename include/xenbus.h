@@ -7,10 +7,14 @@ typedef unsigned long xenbus_transaction_t;
 #define XBT_NIL ((xenbus_transaction_t)0)
 
 #ifdef CONFIG_XENBUS
+extern uint32_t xenbus_evtchn;
+
 /* Initialize the XenBus system. */
 void init_xenbus(void);
 void get_xenbus(void *p);
 #else
+#define xenbus_evtchn ~0
+
 static inline void init_xenbus(void)
 {
 }
@@ -32,8 +36,6 @@ struct xenbus_event {
     struct xenbus_event *next;
 };
 typedef struct xenbus_event *xenbus_event_queue;
-
-extern uint32_t xenbus_evtchn;
 
 char *xenbus_watch_path_token(xenbus_transaction_t xbt, const char *path, const char *token, xenbus_event_queue *events);
 char *xenbus_unwatch_path_token(xenbus_transaction_t xbt, const char *path, const char *token);
