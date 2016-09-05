@@ -152,6 +152,11 @@ CFLAGS += -flto
 LDFLAGS-$(clang) += -plugin LLVMgold.so
 endif
 
+# When adding a new CONFIG_ option please make sure the test configurations
+# under arch/*/testbuild/ are updated accordingly. Especially
+# arch/*/testbuild/*-yes and arch/*/testbuild/*-no should set ALL possible
+# CONFIG_ variables.
+
 # Configuration defaults
 ifeq ($(TARGET_ARCH_FAM),x86)
 CONFIG_PARAVIRT ?= y
