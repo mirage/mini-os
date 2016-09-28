@@ -511,13 +511,13 @@ static __inline__ unsigned long __ffs(unsigned long word)
 #error "Unsupported architecture"
 #endif
 
-#endif /* ifdef __INSIDE_MINIOS */
-
 /********************* common i386 and x86_64  ****************************/
 #define xen_mb()  mb()
 #define xen_rmb() rmb()
 #define xen_wmb() wmb()
 #define xen_barrier() asm volatile ( "" : : : "memory")
+
+#endif /* ifdef __INSIDE_MINIOS */
 
 #define wrmsr(msr,val1,val2) \
       __asm__ __volatile__("wrmsr" \
