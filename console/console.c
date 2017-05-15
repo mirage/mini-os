@@ -82,6 +82,10 @@ void xencons_tx(void)
 
 void console_print(struct consfront_dev *dev, char *data, int length)
 {
+    char *curr_char, saved_char;
+    char copied_str[length+1];
+    char *copied_ptr;
+    int part_len;
     int (*ring_send_fn)(struct consfront_dev *dev, const char *data, unsigned length);
 
     if(!console_initialised)
@@ -89,7 +93,30 @@ void console_print(struct consfront_dev *dev, char *data, int length)
     else
         ring_send_fn = xencons_ring_send;
 
-    ring_send_fn(dev, data, length);
+    copied_ptr = copied_str;
+    memcpy(copied_ptr, data, length);
+    for(curr_char = copied_ptr; curr_char < copied_ptr+length-1; curr_char++)
+    {
+        if(*curr_char == '\n')
+        {
+            *curr_char = '\r';
+            saved_char = *(curr_char+1);
+            *(curr_char+1) = '\n';
+            part_len = curr_char - copied_ptr + 2;
+            ring_send_fn(dev, copied_ptr, part_len);
+            *(curr_char+1) = saved_char;
+            copied_ptr = curr_char+1;
+            length -= part_len - 1;
+        }
+    }
+
+    if (copied_ptr[length-1] == '\n') {
+        copied_ptr[length-1] = '\r';
+        copied_ptr[length] = '\n';
+        length++;
+    }
+    
+    ring_send_fn(dev, copied_ptr, length);
 }
 
 void print(int direct, const char *fmt, va_list args)
