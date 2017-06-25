@@ -43,6 +43,7 @@
 #include <xenbus.h>
 #include <xen/io/console.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 struct consfront_dev {
     domid_t dom;
@@ -55,6 +56,8 @@ struct consfront_dev {
     char *backend;
 
     xenbus_event_queue events;
+
+    bool is_raw;
 
 #ifdef HAVE_LIBC
     int fd;
