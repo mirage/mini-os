@@ -93,6 +93,11 @@ void console_print(struct consfront_dev *dev, char *data, int length)
     else
         ring_send_fn = xencons_ring_send;
 
+    if (dev && dev->is_raw) {
+        ring_send_fn(dev, data, length);
+        return;
+    }
+
     copied_ptr = copied_str;
     memcpy(copied_ptr, data, length);
     for(curr_char = copied_ptr; curr_char < copied_ptr+length-1; curr_char++)
