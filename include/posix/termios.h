@@ -83,5 +83,6 @@ struct termios {
 
 int tcsetattr(int fildes, int action, const struct termios *tios);
 int tcgetattr(int fildes, struct termios *tios);
+void cfmakeraw(struct termios *tios);
 
 #endif /* _POSIX_TERMIOS_H */
