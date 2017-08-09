@@ -6,6 +6,7 @@
  *        File: math.c
  *      Author: Rolf Neugebauer (neugebar@dcs.gla.ac.uk)
  *     Changes: 
+ *        Implement __udivmoddi4 (Wei Liu <wei.liu2@citrix.com>)
  *              
  *        Date: Aug 2003
  * 
@@ -394,6 +395,15 @@ __umoddi3(u_quad_t a, u_quad_t b)
 
 	(void)__qdivrem(a, b, &r);
 	return (r);
+}
+
+/*
+ * Returns the quotient and places remainder in r
+ */
+u_quad_t
+__udivmoddi4(u_quad_t a, u_quad_t b, u_quad_t *r)
+{
+	return __qdivrem(a, b, r);
 }
 
 /*
