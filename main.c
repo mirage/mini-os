@@ -8,6 +8,7 @@
 #include <os.h>
 #include <kernel.h>
 #include <sched.h>
+#include <string.h>
 #include <console.h>
 #include <netfront.h>
 #include <pcifront.h>

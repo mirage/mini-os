@@ -8,6 +8,7 @@
 
 #include <os.h>
 #include <time.h>
+#include <string.h>
 #include <console.h>
 #include <xmalloc.h>
 #include <lwip/sys.h>

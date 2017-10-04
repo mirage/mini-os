@@ -20,6 +20,7 @@
 
 #ifdef HAVE_LIBC
 #include <os.h>
+#include <string.h>
 #include <console.h>
 #include <sched.h>
 #include <events.h>
