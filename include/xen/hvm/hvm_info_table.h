@@ -20,6 +20,8 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
+ *
+ * Copyright (c) 2006, Keir Fraser
  */
 
 #ifndef __XEN_PUBLIC_HVM_HVM_INFO_TABLE_H__
@@ -31,6 +33,14 @@
 
 /* Maximum we can support with current vLAPIC ID mapping. */
 #define HVM_MAX_VCPUS        128
+
+/*
+ * In some cases SMP HVM guests may require knowledge of Xen's idea of vCPU ids
+ * for their vCPUs. For example, HYPERVISOR_vcpu_op and some EVTCHNOP_*
+ * hypercalls take vcpu id as a parameter. It is valid for HVM guests to assume
+ * that Xen's vCPU id always equals to ACPI (not APIC!) id in MADT table which
+ * is always present for SMP guests.
+ */
 
 struct hvm_info_table {
     char        signature[8]; /* "HVM INFO" */

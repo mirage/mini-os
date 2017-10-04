@@ -83,8 +83,17 @@ typedef struct buf_ioreq buf_ioreq_t;
 
 #define IOREQ_BUFFER_SLOT_NUM     511 /* 8 bytes each, plus 2 4-byte indexes */
 struct buffered_iopage {
-    unsigned int read_pointer;
-    unsigned int write_pointer;
+#ifdef __XEN__
+    union bufioreq_pointers {
+        struct {
+#endif
+            uint32_t read_pointer;
+            uint32_t write_pointer;
+#ifdef __XEN__
+        };
+        uint64_t full;
+    } ptrs;
+#endif
     buf_ioreq_t buf_ioreq[IOREQ_BUFFER_SLOT_NUM];
 }; /* NB. Size of this structure must be no greater than one page. */
 typedef struct buffered_iopage buffered_iopage_t;
@@ -94,14 +103,19 @@ typedef struct buffered_iopage buffered_iopage_t;
  * version number in HVM_PARAM_ACPI_IOPORTS_LOCATION.
  */
 
-/* Version 0 (default): Traditional Xen locations. */
+/*
+ * Version 0 (default): Traditional (obsolete) Xen locations.
+ *
+ * These are now only used for compatibility with VMs migrated
+ * from older Xen versions.
+ */
 #define ACPI_PM1A_EVT_BLK_ADDRESS_V0 0x1f40
 #define ACPI_PM1A_CNT_BLK_ADDRESS_V0 (ACPI_PM1A_EVT_BLK_ADDRESS_V0 + 0x04)
 #define ACPI_PM_TMR_BLK_ADDRESS_V0   (ACPI_PM1A_EVT_BLK_ADDRESS_V0 + 0x08)
 #define ACPI_GPE0_BLK_ADDRESS_V0     (ACPI_PM_TMR_BLK_ADDRESS_V0 + 0x20)
 #define ACPI_GPE0_BLK_LEN_V0         0x08
 
-/* Version 1: Locations preferred by modern Qemu. */
+/* Version 1: Locations preferred by modern Qemu (including Qemu-trad). */
 #define ACPI_PM1A_EVT_BLK_ADDRESS_V1 0xb000
 #define ACPI_PM1A_CNT_BLK_ADDRESS_V1 (ACPI_PM1A_EVT_BLK_ADDRESS_V1 + 0x04)
 #define ACPI_PM_TMR_BLK_ADDRESS_V1   (ACPI_PM1A_EVT_BLK_ADDRESS_V1 + 0x08)

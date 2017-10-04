@@ -61,15 +61,15 @@
  *
  * All memory which is shared with other entities in the system
  * (including the hypervisor and other guests) must reside in memory
- * which is mapped as Normal Inner-cacheable. This applies to:
+ * which is mapped as Normal Inner Write-Back Outer Write-Back Inner-Shareable.
+ * This applies to:
  *  - hypercall arguments passed via a pointer to guest memory.
  *  - memory shared via the grant table mechanism (including PV I/O
  *    rings etc).
  *  - memory shared with the hypervisor (struct shared_info, struct
  *    vcpu_info, the grant table, etc).
  *
- * Any Inner cache allocation strategy (Write-Back, Write-Through etc)
- * is acceptable. There is no restriction on the Outer-cacheability.
+ * Any cache allocation hints are acceptable.
  */
 
 /*
@@ -165,6 +165,7 @@
 
 #define XEN_HYPERCALL_TAG   0XEA1
 
+#define  int64_aligned_t  int64_t __attribute__((aligned(8)))
 #define uint64_aligned_t uint64_t __attribute__((aligned(8)))
 
 #ifndef __ASSEMBLY__
@@ -172,7 +173,7 @@
     typedef union { type *p; unsigned long q; }                 \
         __guest_handle_ ## name;                                \
     typedef union { type *p; uint64_aligned_t q; }              \
-        __guest_handle_64_ ## name;
+        __guest_handle_64_ ## name
 
 /*
  * XEN_GUEST_HANDLE represents a guest pointer, when passed as a field
@@ -194,9 +195,6 @@
         _sxghr_tmp->q = 0;                                  \
         _sxghr_tmp->p = val;                                \
     } while ( 0 )
-#ifdef __XEN_TOOLS__
-#define get_xen_guest_handle(val, hnd)  do { val = (hnd).p; } while (0)
-#endif
 #define set_xen_guest_handle(hnd, val) set_xen_guest_handle_raw(hnd, val)
 
 #if defined(__GNUC__) && !defined(__STRICT_ANSI__)
@@ -297,7 +295,35 @@ struct vcpu_guest_context {
 };
 typedef struct vcpu_guest_context vcpu_guest_context_t;
 DEFINE_XEN_GUEST_HANDLE(vcpu_guest_context_t);
-#endif
+
+/*
+ * struct xen_arch_domainconfig's ABI is covered by
+ * XEN_DOMCTL_INTERFACE_VERSION.
+ */
+#define XEN_DOMCTL_CONFIG_GIC_NATIVE    0
+#define XEN_DOMCTL_CONFIG_GIC_V2        1
+#define XEN_DOMCTL_CONFIG_GIC_V3        2
+struct xen_arch_domainconfig {
+    /* IN/OUT */
+    uint8_t gic_version;
+    /* IN */
+    uint32_t nr_spis;
+    /*
+     * OUT
+     * Based on the property clock-frequency in the DT timer node.
+     * The property may be present when the bootloader/firmware doesn't
+     * set correctly CNTFRQ which hold the timer frequency.
+     *
+     * As it's not possible to trap this register, we have to replicate
+     * the value in the guest DT.
+     *
+     * = 0 => property not present
+     * > 0 => Value of the property
+     *
+     */
+    uint32_t clock_frequency;
+};
+#endif /* __XEN__ || __XEN_TOOLS__ */
 
 struct arch_vcpu_info {
 };
@@ -365,38 +391,46 @@ typedef uint64_t xen_callback_t;
  */
 
 /* vGIC v2 mappings */
-#define GUEST_GICD_BASE   0x03001000ULL
-#define GUEST_GICD_SIZE   0x00001000ULL
-#define GUEST_GICC_BASE   0x03002000ULL
-#define GUEST_GICC_SIZE   0x00000100ULL
+#define GUEST_GICD_BASE   xen_mk_ullong(0x03001000)
+#define GUEST_GICD_SIZE   xen_mk_ullong(0x00001000)
+#define GUEST_GICC_BASE   xen_mk_ullong(0x03002000)
+#define GUEST_GICC_SIZE   xen_mk_ullong(0x00002000)
 
 /* vGIC v3 mappings */
-#define GUEST_GICV3_GICD_BASE      0x03001000ULL
-#define GUEST_GICV3_GICD_SIZE      0x00010000ULL
+#define GUEST_GICV3_GICD_BASE      xen_mk_ullong(0x03001000)
+#define GUEST_GICV3_GICD_SIZE      xen_mk_ullong(0x00010000)
 
-#define GUEST_GICV3_RDIST_STRIDE   0x20000ULL
+#define GUEST_GICV3_RDIST_STRIDE   xen_mk_ullong(0x00020000)
 #define GUEST_GICV3_RDIST_REGIONS  1
 
-#define GUEST_GICV3_GICR0_BASE     0x03020000ULL    /* vCPU0 - vCPU7 */
-#define GUEST_GICV3_GICR0_SIZE     0x00100000ULL
+#define GUEST_GICV3_GICR0_BASE     xen_mk_ullong(0x03020000) /* vCPU0..127 */
+#define GUEST_GICV3_GICR0_SIZE     xen_mk_ullong(0x01000000)
+
+/* ACPI tables physical address */
+#define GUEST_ACPI_BASE 0x20000000ULL
+#define GUEST_ACPI_SIZE 0x02000000ULL
+
+/* PL011 mappings */
+#define GUEST_PL011_BASE    0x22000000ULL
+#define GUEST_PL011_SIZE    0x00001000ULL
 
 /*
  * 16MB == 4096 pages reserved for guest to use as a region to map its
  * grant table in.
  */
-#define GUEST_GNTTAB_BASE 0x38000000ULL
-#define GUEST_GNTTAB_SIZE 0x01000000ULL
+#define GUEST_GNTTAB_BASE xen_mk_ullong(0x38000000)
+#define GUEST_GNTTAB_SIZE xen_mk_ullong(0x01000000)
 
-#define GUEST_MAGIC_BASE  0x39000000ULL
-#define GUEST_MAGIC_SIZE  0x01000000ULL
+#define GUEST_MAGIC_BASE  xen_mk_ullong(0x39000000)
+#define GUEST_MAGIC_SIZE  xen_mk_ullong(0x01000000)
 
 #define GUEST_RAM_BANKS   2
 
-#define GUEST_RAM0_BASE   0x40000000ULL /* 3GB of low RAM @ 1GB */
-#define GUEST_RAM0_SIZE   0xc0000000ULL
+#define GUEST_RAM0_BASE   xen_mk_ullong(0x40000000) /* 3GB of low RAM @ 1GB */
+#define GUEST_RAM0_SIZE   xen_mk_ullong(0xc0000000)
 
-#define GUEST_RAM1_BASE   0x0200000000ULL /* 1016GB of RAM @ 8GB */
-#define GUEST_RAM1_SIZE   0xfe00000000ULL
+#define GUEST_RAM1_BASE   xen_mk_ullong(0x0200000000) /* 1016GB of RAM @ 8GB */
+#define GUEST_RAM1_SIZE   xen_mk_ullong(0xfe00000000)
 
 #define GUEST_RAM_BASE    GUEST_RAM0_BASE /* Lowest RAM address */
 /* Largest amount of actual RAM, not including holes */
@@ -405,11 +439,16 @@ typedef uint64_t xen_callback_t;
 #define GUEST_RAM_BANK_BASES   { GUEST_RAM0_BASE, GUEST_RAM1_BASE }
 #define GUEST_RAM_BANK_SIZES   { GUEST_RAM0_SIZE, GUEST_RAM1_SIZE }
 
+/* Current supported guest VCPUs */
+#define GUEST_MAX_VCPUS 128
+
 /* Interrupts */
 #define GUEST_TIMER_VIRT_PPI    27
 #define GUEST_TIMER_PHYS_S_PPI  29
 #define GUEST_TIMER_PHYS_NS_PPI 30
 #define GUEST_EVTCHN_PPI        31
+
+#define GUEST_VPL011_SPI        32
 
 /* PSCI functions */
 #define PSCI_cpu_suspend 0
@@ -417,6 +456,11 @@ typedef uint64_t xen_callback_t;
 #define PSCI_cpu_on      2
 #define PSCI_migrate     3
 
+#endif
+
+#ifndef __ASSEMBLY__
+/* Stub definition of PMU structure */
+typedef struct xen_pmu_arch { uint8_t dummy; } xen_pmu_arch_t;
 #endif
 
 #endif /*  __XEN_PUBLIC_ARCH_ARM_H__ */

@@ -35,13 +35,28 @@
  * Set clock such that it would read <secs,nsecs> after 00:00:00 UTC,
  * 1 January, 1970 if the current system time was <system_time>.
  */
-#define XENPF_settime             17
-struct xenpf_settime {
+#define XENPF_settime32           17
+struct xenpf_settime32 {
     /* IN variables. */
     uint32_t secs;
     uint32_t nsecs;
     uint64_t system_time;
 };
+#define XENPF_settime64           62
+struct xenpf_settime64 {
+    /* IN variables. */
+    uint64_t secs;
+    uint32_t nsecs;
+    uint32_t mbz;
+    uint64_t system_time;
+};
+#if __XEN_INTERFACE_VERSION__ < 0x00040600
+#define XENPF_settime XENPF_settime32
+#define xenpf_settime xenpf_settime32
+#else
+#define XENPF_settime XENPF_settime64
+#define xenpf_settime xenpf_settime64
+#endif
 typedef struct xenpf_settime xenpf_settime_t;
 DEFINE_XEN_GUEST_HANDLE(xenpf_settime_t);
 
@@ -126,6 +141,26 @@ DEFINE_XEN_GUEST_HANDLE(xenpf_platform_quirk_t);
 #define XEN_EFI_query_variable_info           9
 #define XEN_EFI_query_capsule_capabilities   10
 #define XEN_EFI_update_capsule               11
+
+struct xenpf_efi_time {
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t min;
+    uint8_t sec;
+    uint32_t ns;
+    int16_t tz;
+    uint8_t daylight;
+};
+
+struct xenpf_efi_guid {
+    uint32_t data1;
+    uint16_t data2;
+    uint16_t data3;
+    uint8_t data4[8];
+};
+
 struct xenpf_efi_runtime_call {
     uint32_t function;
     /*
@@ -138,17 +173,7 @@ struct xenpf_efi_runtime_call {
     union {
 #define XEN_EFI_GET_TIME_SET_CLEARS_NS 0x00000001
         struct {
-            struct xenpf_efi_time {
-                uint16_t year;
-                uint8_t month;
-                uint8_t day;
-                uint8_t hour;
-                uint8_t min;
-                uint8_t sec;
-                uint32_t ns;
-                int16_t tz;
-                uint8_t daylight;
-            } time;
+            struct xenpf_efi_time time;
             uint32_t resolution;
             uint32_t accuracy;
         } get_time;
@@ -170,12 +195,7 @@ struct xenpf_efi_runtime_call {
             XEN_GUEST_HANDLE(void) name;  /* UCS-2/UTF-16 string */
             xen_ulong_t size;
             XEN_GUEST_HANDLE(void) data;
-            struct xenpf_efi_guid {
-                uint32_t data1;
-                uint16_t data2;
-                uint16_t data3;
-                uint8_t data4[8];
-            } vendor_guid;
+            struct xenpf_efi_guid vendor_guid;
         } get_variable, set_variable;
 
         struct {
@@ -220,6 +240,7 @@ DEFINE_XEN_GUEST_HANDLE(xenpf_efi_runtime_call_t);
 #define  XEN_FW_EFI_MEM_INFO       3
 #define  XEN_FW_EFI_RT_VERSION     4
 #define  XEN_FW_EFI_PCI_ROM        5
+#define  XEN_FW_EFI_APPLE_PROPERTIES 6
 #define XEN_FW_KBD_SHIFT_FLAGS    5
 struct xenpf_firmware_info {
     /* IN variables. */
@@ -279,6 +300,11 @@ struct xenpf_firmware_info {
                 uint64_t address;
                 xen_ulong_t size;
             } pci_rom;
+            struct {
+                /* OUT variables */
+                uint64_t address;
+                xen_ulong_t size;
+            } apple_properties;
         } efi_info; /* XEN_FW_EFI_INFO */
 
         /* Int16, Fn02: Get keyboard shift flags. */
@@ -540,6 +566,16 @@ DEFINE_XEN_GUEST_HANDLE(xenpf_core_parking_t);
 #define XEN_RESOURCE_OP_MSR_READ  0
 #define XEN_RESOURCE_OP_MSR_WRITE 1
 
+/*
+ * Specially handled MSRs:
+ * - MSR_IA32_TSC
+ * READ: Returns the scaled system time(ns) instead of raw timestamp. In
+ *       multiple entry case, if other MSR read is followed by a MSR_IA32_TSC
+ *       read, then both reads are guaranteed to be performed atomically (with
+ *       IRQ disabled). The return time indicates the point of reading that MSR.
+ * WRITE: Not supported.
+ */
+
 struct xenpf_resource_entry {
     union {
         uint32_t cmd;   /* IN: XEN_RESOURCE_OP_* */
@@ -560,6 +596,24 @@ struct xenpf_resource_op {
 typedef struct xenpf_resource_op xenpf_resource_op_t;
 DEFINE_XEN_GUEST_HANDLE(xenpf_resource_op_t);
 
+#define XENPF_get_symbol   63
+struct xenpf_symdata {
+    /* IN/OUT variables */
+    uint32_t namelen; /* IN:  size of name buffer                       */
+                      /* OUT: strlen(name) of hypervisor symbol (may be */
+                      /*      larger than what's been copied to guest)  */
+    uint32_t symnum;  /* IN:  Symbol to read                            */
+                      /* OUT: Next available symbol. If same as IN then */
+                      /*      we reached the end                        */
+
+    /* OUT variables */
+    XEN_GUEST_HANDLE(char) name;
+    uint64_t address;
+    char type;
+};
+typedef struct xenpf_symdata xenpf_symdata_t;
+DEFINE_XEN_GUEST_HANDLE(xenpf_symdata_t);
+
 /*
  * ` enum neg_errnoval
  * ` HYPERVISOR_platform_op(const struct xen_platform_op*);
@@ -569,6 +623,8 @@ struct xen_platform_op {
     uint32_t interface_version; /* XENPF_INTERFACE_VERSION */
     union {
         struct xenpf_settime           settime;
+        struct xenpf_settime32         settime32;
+        struct xenpf_settime64         settime64;
         struct xenpf_add_memtype       add_memtype;
         struct xenpf_del_memtype       del_memtype;
         struct xenpf_read_memtype      read_memtype;
@@ -587,6 +643,7 @@ struct xen_platform_op {
         struct xenpf_mem_hotadd        mem_add;
         struct xenpf_core_parking      core_parking;
         struct xenpf_resource_op       resource_op;
+        struct xenpf_symdata           symdata;
         uint8_t                        pad[128];
     } u;
 };

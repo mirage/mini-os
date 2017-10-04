@@ -16,6 +16,8 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
+ *
+ * Copyright (c) 2007, Keir Fraser
  */
 
 #ifndef __XEN_PUBLIC_HVM_PARAMS_H__
@@ -27,18 +29,47 @@
  * Parameter space for HVMOP_{set,get}_param.
  */
 
+#define HVM_PARAM_CALLBACK_IRQ 0
+#define HVM_PARAM_CALLBACK_IRQ_TYPE_MASK xen_mk_ullong(0xFF00000000000000)
 /*
  * How should CPU0 event-channel notifications be delivered?
- * val[63:56] == 0: val[55:0] is a delivery GSI (Global System Interrupt).
- * val[63:56] == 1: val[55:0] is a delivery PCI INTx line, as follows:
- *                  Domain = val[47:32], Bus  = val[31:16],
- *                  DevFn  = val[15: 8], IntX = val[ 1: 0]
- * val[63:56] == 2: val[7:0] is a vector number, check for
- *                  XENFEAT_hvm_callback_vector to know if this delivery
- *                  method is available.
+ *
  * If val == 0 then CPU0 event-channel notifications are not delivered.
+ * If val != 0, val[63:56] encodes the type, as follows:
  */
-#define HVM_PARAM_CALLBACK_IRQ 0
+
+#define HVM_PARAM_CALLBACK_TYPE_GSI      0
+/*
+ * val[55:0] is a delivery GSI.  GSI 0 cannot be used, as it aliases val == 0,
+ * and disables all notifications.
+ */
+
+#define HVM_PARAM_CALLBACK_TYPE_PCI_INTX 1
+/*
+ * val[55:0] is a delivery PCI INTx line:
+ * Domain = val[47:32], Bus = val[31:16] DevFn = val[15:8], IntX = val[1:0]
+ */
+
+#if defined(__i386__) || defined(__x86_64__)
+#define HVM_PARAM_CALLBACK_TYPE_VECTOR   2
+/*
+ * val[7:0] is a vector number.  Check for XENFEAT_hvm_callback_vector to know
+ * if this delivery method is available.
+ */
+#elif defined(__arm__) || defined(__aarch64__)
+#define HVM_PARAM_CALLBACK_TYPE_PPI      2
+/*
+ * val[55:16] needs to be zero.
+ * val[15:8] is interrupt flag of the PPI used by event-channel:
+ *  bit 8: the PPI is edge(1) or level(0) triggered
+ *  bit 9: the PPI is active low(1) or high(0)
+ * val[7:0] is a PPI number used by event-channel.
+ * This is only used by ARM/ARM64 and masking/eoi the interrupt associated to
+ * the notification is handled by the interrupt controller.
+ */
+#define HVM_PARAM_CALLBACK_TYPE_PPI_FLAG_MASK      0xFF00
+#define HVM_PARAM_CALLBACK_TYPE_PPI_FLAG_LOW_LEVEL 2
+#endif
 
 /*
  * These are not used by Xen. They are here for convenience of HVM-guest
@@ -96,11 +127,26 @@
 #define _HVMPV_reference_tsc 3
 #define HVMPV_reference_tsc  (1 << _HVMPV_reference_tsc)
 
+/* Use Hypercall for remote TLB flush */
+#define _HVMPV_hcall_remote_tlb_flush 4
+#define HVMPV_hcall_remote_tlb_flush (1 << _HVMPV_hcall_remote_tlb_flush)
+
+/* Use APIC assist */
+#define _HVMPV_apic_assist 5
+#define HVMPV_apic_assist (1 << _HVMPV_apic_assist)
+
+/* Enable crash MSRs */
+#define _HVMPV_crash_ctl 6
+#define HVMPV_crash_ctl (1 << _HVMPV_crash_ctl)
+
 #define HVMPV_feature_mask \
-	(HVMPV_base_freq | \
-	 HVMPV_no_freq | \
-	 HVMPV_time_ref_count | \
-	 HVMPV_reference_tsc)
+        (HVMPV_base_freq | \
+         HVMPV_no_freq | \
+         HVMPV_time_ref_count | \
+         HVMPV_reference_tsc | \
+         HVMPV_hcall_remote_tlb_flush | \
+         HVMPV_apic_assist | \
+         HVMPV_crash_ctl)
 
 #endif
 
@@ -162,8 +208,7 @@
  */
 #define HVM_PARAM_ACPI_IOPORTS_LOCATION 19
 
-/* Enable blocking memory events, async or sync (pause vcpu until response) 
- * onchangeonly indicates messages only on a change of value */
+/* Deprecated */
 #define HVM_PARAM_MEMORY_EVENT_CR0          20
 #define HVM_PARAM_MEMORY_EVENT_CR3          21
 #define HVM_PARAM_MEMORY_EVENT_CR4          22
@@ -171,18 +216,12 @@
 #define HVM_PARAM_MEMORY_EVENT_SINGLE_STEP  25
 #define HVM_PARAM_MEMORY_EVENT_MSR          30
 
-#define HVMPME_MODE_MASK       (3 << 0)
-#define HVMPME_mode_disabled   0
-#define HVMPME_mode_async      1
-#define HVMPME_mode_sync       2
-#define HVMPME_onchangeonly    (1 << 2)
-
 /* Boolean: Enable nestedhvm (hvm only) */
 #define HVM_PARAM_NESTEDHVM    24
 
 /* Params for the mem event rings */
 #define HVM_PARAM_PAGING_RING_PFN   27
-#define HVM_PARAM_ACCESS_RING_PFN   28
+#define HVM_PARAM_MONITOR_RING_PFN  28
 #define HVM_PARAM_SHARING_RING_PFN  29
 
 /* SHUTDOWN_* action in case of a triple fault */
@@ -194,6 +233,52 @@
 /* Location of the VM Generation ID in guest physical address space. */
 #define HVM_PARAM_VM_GENERATION_ID_ADDR 34
 
-#define HVM_NR_PARAMS          35
+/*
+ * Set mode for altp2m:
+ *  disabled: don't activate altp2m (default)
+ *  mixed: allow access to all altp2m ops for both in-guest and external tools
+ *  external: allow access to external privileged tools only
+ *  limited: guest only has limited access (ie. control VMFUNC and #VE)
+ */
+#define HVM_PARAM_ALTP2M       35
+#define XEN_ALTP2M_disabled      0
+#define XEN_ALTP2M_mixed         1
+#define XEN_ALTP2M_external      2
+#define XEN_ALTP2M_limited       3
+
+/*
+ * Size of the x87 FPU FIP/FDP registers that the hypervisor needs to
+ * save/restore.  This is a workaround for a hardware limitation that
+ * does not allow the full FIP/FDP and FCS/FDS to be restored.
+ *
+ * Valid values are:
+ *
+ * 8: save/restore 64-bit FIP/FDP and clear FCS/FDS (default if CPU
+ *    has FPCSDS feature).
+ *
+ * 4: save/restore 32-bit FIP/FDP, FCS/FDS, and clear upper 32-bits of
+ *    FIP/FDP.
+ *
+ * 0: allow hypervisor to choose based on the value of FIP/FDP
+ *    (default if CPU does not have FPCSDS).
+ *
+ * If FPCSDS (bit 13 in CPUID leaf 0x7, subleaf 0x0) is set, the CPU
+ * never saves FCS/FDS and this parameter should be left at the
+ * default of 8.
+ */
+#define HVM_PARAM_X87_FIP_WIDTH 36
+
+/*
+ * TSS (and its size) used on Intel when CR0.PE=0. The address occupies
+ * the low 32 bits, while the size is in the high 32 ones.
+ */
+#define HVM_PARAM_VM86_TSS_SIZED 37
+
+/* Enable MCA capabilities. */
+#define HVM_PARAM_MCA_CAP 38
+#define XEN_HVM_MCA_CAP_LMCE   (xen_mk_ullong(1) << 0)
+#define XEN_HVM_MCA_CAP_MASK   XEN_HVM_MCA_CAP_LMCE
+
+#define HVM_NR_PARAMS 39
 
 #endif /* __XEN_PUBLIC_HVM_PARAMS_H__ */

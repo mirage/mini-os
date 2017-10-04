@@ -25,6 +25,8 @@
 #ifndef __FLASK_OP_H__
 #define __FLASK_OP_H__
 
+#include "../event_channel.h"
+
 #define XEN_FLASK_INTERFACE_VERSION 1
 
 struct xen_flask_load {
@@ -68,6 +70,7 @@ struct xen_flask_transition {
     uint32_t newsid;
 };
 
+#if __XEN_INTERFACE_VERSION__ < 0x00040800
 struct xen_flask_userlist {
     /* IN: starting SID for list */
     uint32_t start_sid;
@@ -81,6 +84,7 @@ struct xen_flask_userlist {
         XEN_GUEST_HANDLE(uint32) sids;
     } u;
 };
+#endif
 
 struct xen_flask_boolean {
     /* IN/OUT: numeric identifier for boolean [GET/SET]
@@ -148,6 +152,13 @@ struct xen_flask_relabel {
     uint32_t sid;
 };
 
+struct xen_flask_devicetree_label {
+    /* IN */
+    uint32_t sid;
+    uint32_t length;
+    XEN_GUEST_HANDLE(char) path;
+};
+
 struct xen_flask_op {
     uint32_t cmd;
 #define FLASK_LOAD              1
@@ -158,7 +169,7 @@ struct xen_flask_op {
 #define FLASK_ACCESS            6
 #define FLASK_CREATE            7
 #define FLASK_RELABEL           8
-#define FLASK_USER              9
+#define FLASK_USER              9  /* No longer implemented */
 #define FLASK_POLICYVERS        10
 #define FLASK_GETBOOL           11
 #define FLASK_SETBOOL           12
@@ -174,6 +185,7 @@ struct xen_flask_op {
 #define FLASK_DEL_OCONTEXT      22
 #define FLASK_GET_PEER_SID      23
 #define FLASK_RELABEL_DOMAIN    24
+#define FLASK_DEVICETREE_LABEL  25
     uint32_t interface_version; /* XEN_FLASK_INTERFACE_VERSION */
     union {
         struct xen_flask_load load;
@@ -183,7 +195,9 @@ struct xen_flask_op {
         struct xen_flask_access access;
         /* FLASK_CREATE, FLASK_RELABEL, FLASK_MEMBER */
         struct xen_flask_transition transition;
+#if __XEN_INTERFACE_VERSION__ < 0x00040800
         struct xen_flask_userlist userlist;
+#endif
         /* FLASK_GETBOOL, FLASK_SETBOOL */
         struct xen_flask_boolean boolean;
         struct xen_flask_setavc_threshold setavc_threshold;
@@ -193,6 +207,7 @@ struct xen_flask_op {
         struct xen_flask_ocontext ocontext;
         struct xen_flask_peersid peersid;
         struct xen_flask_relabel relabel;
+        struct xen_flask_devicetree_label devicetree_label;
     } u;
 };
 typedef struct xen_flask_op xen_flask_op_t;

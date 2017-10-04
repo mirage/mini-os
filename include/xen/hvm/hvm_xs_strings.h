@@ -20,6 +20,8 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
+ *
+ * Copyright (c) 2013, Citrix Systems
  */
 
 #ifndef __XEN_PUBLIC_HVM_HVM_XS_STRINGS_H__
@@ -69,6 +71,7 @@
 #define HVM_XS_SYSTEM_SERIAL_NUMBER    "bios-strings/system-serial-number"
 #define HVM_XS_ENCLOSURE_MANUFACTURER  "bios-strings/enclosure-manufacturer"
 #define HVM_XS_ENCLOSURE_SERIAL_NUMBER "bios-strings/enclosure-serial-number"
+#define HVM_XS_ENCLOSURE_ASSET_TAG     "bios-strings/enclosure-asset-tag"
 #define HVM_XS_BATTERY_MANUFACTURER    "bios-strings/battery-manufacturer"
 #define HVM_XS_BATTERY_DEVICE_NAME     "bios-strings/battery-device-name"
 

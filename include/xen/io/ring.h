@@ -27,6 +27,21 @@
 #ifndef __XEN_PUBLIC_IO_RING_H__
 #define __XEN_PUBLIC_IO_RING_H__
 
+/*
+ * When #include'ing this header, you need to provide the following
+ * declaration upfront:
+ * - standard integers types (uint8_t, uint16_t, etc)
+ * They are provided by stdint.h of the standard headers.
+ *
+ * In addition, if you intend to use the FLEX macros, you also need to
+ * provide the following, before invoking the FLEX macros:
+ * - size_t
+ * - memcpy
+ * - grant_ref_t
+ * These declarations are provided by string.h of the standard headers,
+ * and grant_table.h from the Xen public headers.
+ */
+
 #include "../xen-compat.h"
 
 #if __XEN_INTERFACE_VERSION__ < 0x00030208
@@ -111,7 +126,7 @@ struct __name##_sring {                                                 \
             uint8_t msg;                                                \
         } tapif_user;                                                   \
         uint8_t pvt_pad[4];                                             \
-    } private;                                                          \
+    } pvt;                                                              \
     uint8_t __pad[44];                                                  \
     union __name##_sring_entry ring[1]; /* variable-length */           \
 };                                                                      \
@@ -156,7 +171,7 @@ typedef struct __name##_back_ring __name##_back_ring_t
 #define SHARED_RING_INIT(_s) do {                                       \
     (_s)->req_prod  = (_s)->rsp_prod  = 0;                              \
     (_s)->req_event = (_s)->rsp_event = 1;                              \
-    (void)memset((_s)->private.pvt_pad, 0, sizeof((_s)->private.pvt_pad)); \
+    (void)memset((_s)->pvt.pvt_pad, 0, sizeof((_s)->pvt.pvt_pad));      \
     (void)memset((_s)->__pad, 0, sizeof((_s)->__pad));                  \
 } while(0)
 
@@ -211,6 +226,20 @@ typedef struct __name##_back_ring __name##_back_ring_t
 /* Direct access to individual ring elements, by index. */
 #define RING_GET_REQUEST(_r, _idx)                                      \
     (&((_r)->sring->ring[((_idx) & (RING_SIZE(_r) - 1))].req))
+
+/*
+ * Get a local copy of a request.
+ *
+ * Use this in preference to RING_GET_REQUEST() so all processing is
+ * done on a local copy that cannot be modified by the other end.
+ *
+ * Note that https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145 may cause this
+ * to be ineffective where _req is a struct which consists of only bitfields.
+ */
+#define RING_COPY_REQUEST(_r, _idx, _req) do {				\
+	/* Use volatile to force the copy into _req. */			\
+	*(_req) = *(volatile typeof(_req))RING_GET_REQUEST(_r, _idx);	\
+} while (0)
 
 #define RING_GET_RESPONSE(_r, _idx)                                     \
     (&((_r)->sring->ring[((_idx) & (RING_SIZE(_r) - 1))].rsp))
@@ -298,6 +327,149 @@ typedef struct __name##_back_ring __name##_back_ring_t
     xen_mb();                                                           \
     (_work_to_do) = RING_HAS_UNCONSUMED_RESPONSES(_r);                  \
 } while (0)
+
+
+/*
+ * DEFINE_XEN_FLEX_RING_AND_INTF defines two monodirectional rings and
+ * functions to check if there is data on the ring, and to read and
+ * write to them.
+ *
+ * DEFINE_XEN_FLEX_RING is similar to DEFINE_XEN_FLEX_RING_AND_INTF, but
+ * does not define the indexes page. As different protocols can have
+ * extensions to the basic format, this macro allow them to define their
+ * own struct.
+ *
+ * XEN_FLEX_RING_SIZE
+ *   Convenience macro to calculate the size of one of the two rings
+ *   from the overall order.
+ *
+ * $NAME_mask
+ *   Function to apply the size mask to an index, to reduce the index
+ *   within the range [0-size].
+ *
+ * $NAME_read_packet
+ *   Function to read data from the ring. The amount of data to read is
+ *   specified by the "size" argument.
+ *
+ * $NAME_write_packet
+ *   Function to write data to the ring. The amount of data to write is
+ *   specified by the "size" argument.
+ *
+ * $NAME_get_ring_ptr
+ *   Convenience function that returns a pointer to read/write to the
+ *   ring at the right location.
+ *
+ * $NAME_data_intf
+ *   Indexes page, shared between frontend and backend. It also
+ *   contains the array of grant refs.
+ *
+ * $NAME_queued
+ *   Function to calculate how many bytes are currently on the ring,
+ *   ready to be read. It can also be used to calculate how much free
+ *   space is currently on the ring (XEN_FLEX_RING_SIZE() -
+ *   $NAME_queued()).
+ */
+
+#ifndef XEN_PAGE_SHIFT
+/* The PAGE_SIZE for ring protocols and hypercall interfaces is always
+ * 4K, regardless of the architecture, and page granularity chosen by
+ * operating systems.
+ */
+#define XEN_PAGE_SHIFT 12
+#endif
+#define XEN_FLEX_RING_SIZE(order)                                             \
+    (1UL << ((order) + XEN_PAGE_SHIFT - 1))
+
+#define DEFINE_XEN_FLEX_RING(name)                                            \
+static inline RING_IDX name##_mask(RING_IDX idx, RING_IDX ring_size)          \
+{                                                                             \
+    return idx & (ring_size - 1);                                             \
+}                                                                             \
+                                                                              \
+static inline unsigned char *name##_get_ring_ptr(unsigned char *buf,          \
+                                                 RING_IDX idx,                \
+                                                 RING_IDX ring_size)          \
+{                                                                             \
+    return buf + name##_mask(idx, ring_size);                                 \
+}                                                                             \
+                                                                              \
+static inline void name##_read_packet(void *opaque,                           \
+                                      const unsigned char *buf,               \
+                                      size_t size,                            \
+                                      RING_IDX masked_prod,                   \
+                                      RING_IDX *masked_cons,                  \
+                                      RING_IDX ring_size)                     \
+{                                                                             \
+    if (*masked_cons < masked_prod ||                                         \
+        size <= ring_size - *masked_cons) {                                   \
+        memcpy(opaque, buf + *masked_cons, size);                             \
+    } else {                                                                  \
+        memcpy(opaque, buf + *masked_cons, ring_size - *masked_cons);         \
+        memcpy((unsigned char *)opaque + ring_size - *masked_cons, buf,       \
+               size - (ring_size - *masked_cons));                            \
+    }                                                                         \
+    *masked_cons = name##_mask(*masked_cons + size, ring_size);               \
+}                                                                             \
+                                                                              \
+static inline void name##_write_packet(unsigned char *buf,                    \
+                                       const void *opaque,                    \
+                                       size_t size,                           \
+                                       RING_IDX *masked_prod,                 \
+                                       RING_IDX masked_cons,                  \
+                                       RING_IDX ring_size)                    \
+{                                                                             \
+    if (*masked_prod < masked_cons ||                                         \
+        size <= ring_size - *masked_prod) {                                   \
+        memcpy(buf + *masked_prod, opaque, size);                             \
+    } else {                                                                  \
+        memcpy(buf + *masked_prod, opaque, ring_size - *masked_prod);         \
+        memcpy(buf, (unsigned char *)opaque + (ring_size - *masked_prod),     \
+               size - (ring_size - *masked_prod));                            \
+    }                                                                         \
+    *masked_prod = name##_mask(*masked_prod + size, ring_size);               \
+}                                                                             \
+                                                                              \
+static inline RING_IDX name##_queued(RING_IDX prod,                           \
+                                     RING_IDX cons,                           \
+                                     RING_IDX ring_size)                      \
+{                                                                             \
+    RING_IDX size;                                                            \
+                                                                              \
+    if (prod == cons)                                                         \
+        return 0;                                                             \
+                                                                              \
+    prod = name##_mask(prod, ring_size);                                      \
+    cons = name##_mask(cons, ring_size);                                      \
+                                                                              \
+    if (prod == cons)                                                         \
+        return ring_size;                                                     \
+                                                                              \
+    if (prod > cons)                                                          \
+        size = prod - cons;                                                   \
+    else                                                                      \
+        size = ring_size - (cons - prod);                                     \
+    return size;                                                              \
+}                                                                             \
+                                                                              \
+struct name##_data {                                                          \
+    unsigned char *in; /* half of the allocation */                           \
+    unsigned char *out; /* half of the allocation */                          \
+}
+
+#define DEFINE_XEN_FLEX_RING_AND_INTF(name)                                   \
+struct name##_data_intf {                                                     \
+    RING_IDX in_cons, in_prod;                                                \
+                                                                              \
+    uint8_t pad1[56];                                                         \
+                                                                              \
+    RING_IDX out_cons, out_prod;                                              \
+                                                                              \
+    uint8_t pad2[56];                                                         \
+                                                                              \
+    RING_IDX ring_order;                                                      \
+    grant_ref_t ref[];                                                        \
+};                                                                            \
+DEFINE_XEN_FLEX_RING(name)
 
 #endif /* __XEN_PUBLIC_IO_RING_H__ */
 
