@@ -188,8 +188,7 @@ error:
     return NULL;
 }
 
-void fini_console(struct consfront_dev *dev)
+void fini_consfront(struct consfront_dev *dev)
 {
     if (dev) free_consfront(dev);
 }
-

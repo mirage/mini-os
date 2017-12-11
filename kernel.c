@@ -122,10 +122,14 @@ void pre_suspend(void)
     local_irq_disable();
 
     fini_time();
+
+    suspend_console();
 }
 
 void post_suspend(int canceled)
 {
+    resume_console();
+
     init_time();
 
     local_irq_enable();

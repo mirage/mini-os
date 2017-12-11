@@ -487,7 +487,7 @@ int close(int fd)
 #ifdef CONFIG_CONSFRONT
         case FTYPE_SAVEFILE:
         case FTYPE_CONSOLE:
-            fini_console(files[fd].cons.dev);
+            fini_consfront(files[fd].cons.dev);
             files[fd].type = FTYPE_NONE;
             return 0;
 #endif
