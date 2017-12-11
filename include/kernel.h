@@ -5,6 +5,8 @@
 extern char cmdline[MAX_CMDLINE_SIZE];
 
 void start_kernel(void);
+void pre_suspend(void);
+void post_suspend(int canceled);
 void do_exit(void) __attribute__((noreturn));
 void arch_do_exit(void);
 void stop_kernel(void);

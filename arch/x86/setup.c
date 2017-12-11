@@ -204,6 +204,16 @@ arch_init(void *par)
 	start_kernel();
 }
 
+void arch_pre_suspend(void)
+{
+
+}
+
+void arch_post_suspend(int canceled)
+{
+
+}
+
 void
 arch_fini(void)
 {

@@ -71,9 +71,9 @@ void trap_fini(void);
 void xen_callback_vector(void);
 #endif
 
+void arch_pre_suspend(void);
+void arch_post_suspend(int canceled);
 void arch_fini(void);
-
-
 
 #ifdef CONFIG_PARAVIRT
 

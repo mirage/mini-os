@@ -155,6 +155,16 @@ void start_kernel(void)
     run_idle_thread();
 }
 
+void pre_suspend(void)
+{
+
+}
+
+void post_suspend(int canceled)
+{
+
+}
+
 void stop_kernel(void)
 {
     /* TODO: fs import */
