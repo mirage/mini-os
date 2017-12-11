@@ -233,7 +233,6 @@ static void timer_handler(evtchn_port_t ev, struct pt_regs *regs, void *ign)
 static evtchn_port_t port;
 void init_time(void)
 {
-    printk("Initialising timer interface\n");
     port = bind_virq(VIRQ_TIMER, &timer_handler, NULL);
     unmask_evtchn(port);
 }
