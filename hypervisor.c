@@ -78,6 +78,18 @@ shared_info_t *map_shared_info(void *p)
 
     return &shared_info;
 }
+
+void unmap_shared_info(void)
+{
+    struct xen_remove_from_physmap xrtp;
+
+    xrtp.domid = DOMID_SELF;
+    xrtp.gpfn = virt_to_pfn(&shared_info);
+    if ( HYPERVISOR_memory_op(XENMEM_remove_from_physmap, &xrtp) != 0 )
+        BUG();
+
+    return;
+}
 #endif
 
 void do_hypervisor_callback(struct pt_regs *regs)
