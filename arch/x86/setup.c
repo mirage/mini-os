@@ -201,7 +201,7 @@ arch_init(void *par)
 	memcpy(&start_info, par, sizeof(start_info));
 #endif
 
-	start_kernel();
+	start_kernel((start_info_t *)par);
 }
 
 void arch_pre_suspend(void)

@@ -4,7 +4,7 @@
 #define MAX_CMDLINE_SIZE 1024
 extern char cmdline[MAX_CMDLINE_SIZE];
 
-void start_kernel(void);
+void start_kernel(void* par);
 void pre_suspend(void);
 void post_suspend(int canceled);
 void do_exit(void) __attribute__((noreturn));

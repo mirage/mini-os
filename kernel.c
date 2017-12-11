@@ -42,6 +42,9 @@
 #include <mini-os/blkfront.h>
 #include <mini-os/fbfront.h>
 #include <mini-os/pcifront.h>
+#ifdef CONFIG_XENBUS
+#include <mini-os/shutdown.h>
+#endif
 #include <mini-os/xmalloc.h>
 #include <fcntl.h>
 #include <xen/features.h>
@@ -66,48 +69,6 @@ void setup_xen_features(void)
     }
 }
 
-#ifdef CONFIG_XENBUS
-/* This should be overridden by the application we are linked against. */
-__attribute__((weak)) void app_shutdown(unsigned reason)
-{
-    struct sched_shutdown sched_shutdown = { .reason = reason };
-    printk("Shutdown requested: %d\n", reason);
-    HYPERVISOR_sched_op(SCHEDOP_shutdown, &sched_shutdown);
-}
-
-static void shutdown_thread(void *p)
-{
-    const char *path = "control/shutdown";
-    const char *token = path;
-    xenbus_event_queue events = NULL;
-    char *shutdown = NULL, *err;
-    unsigned int shutdown_reason;
-    xenbus_watch_path_token(XBT_NIL, path, token, &events);
-    while ((err = xenbus_read(XBT_NIL, path, &shutdown)) != NULL || !strcmp(shutdown, ""))
-    {
-        free(err);
-        free(shutdown);
-        shutdown = NULL;
-        xenbus_wait_for_watch(&events);
-    }
-    err = xenbus_unwatch_path_token(XBT_NIL, path, token);
-    free(err);
-    err = xenbus_write(XBT_NIL, path, "");
-    free(err);
-    printk("Shutting down (%s)\n", shutdown);
-
-    if (!strcmp(shutdown, "poweroff"))
-        shutdown_reason = SHUTDOWN_poweroff;
-    else if (!strcmp(shutdown, "reboot"))
-        shutdown_reason = SHUTDOWN_reboot;
-    else
-        /* Unknown */
-        shutdown_reason = SHUTDOWN_crash;
-    app_shutdown(shutdown_reason);
-    free(shutdown);
-}
-#endif
-
 
 /* This should be overridden by the application we are linked against. */
 __attribute__((weak)) int app_main(void *p)
@@ -116,7 +77,7 @@ __attribute__((weak)) int app_main(void *p)
     return 0;
 }
 
-void start_kernel(void)
+void start_kernel(void* par)
 {
     /* Set up events. */
     init_events();
@@ -145,7 +106,8 @@ void start_kernel(void)
     init_xenbus();
 
 #ifdef CONFIG_XENBUS
-    create_thread("shutdown", shutdown_thread, NULL);
+    /* Init shutdown thread */
+    init_shutdown((start_info_t *)par);
 #endif
 
     /* Call (possibly overridden) app_main() */
