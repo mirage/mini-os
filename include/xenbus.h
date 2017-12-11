@@ -120,6 +120,8 @@ domid_t xenbus_get_self_id(void);
 #ifdef CONFIG_XENBUS
 /* Reset the XenBus system. */
 void fini_xenbus(void);
+void suspend_xenbus(void);
+void resume_xenbus(int canceled);
 #else
 static inline void fini_xenbus(void)
 {

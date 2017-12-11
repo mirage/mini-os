@@ -50,6 +50,7 @@ DECLARE_WAIT_QUEUE_HEAD(xenbus_watch_queue);
 xenbus_event_queue xenbus_events;
 static struct watch {
     char *token;
+    char *path;
     xenbus_event_queue *events;
     struct watch *next;
 } *watches;
@@ -62,6 +63,8 @@ struct xenbus_req_info
 
 #define NR_REQS 32
 static struct xenbus_req_info req_info[NR_REQS];
+
+static char *errmsg(struct xsd_sockmsg *rep);
 
 uint32_t xenbus_evtchn;
 
@@ -231,45 +234,39 @@ static void xenbus_thread_func(void *ign)
     struct xsd_sockmsg msg;
     unsigned prod = xenstore_buf->rsp_prod;
 
-    for (;;) 
-    {
+    for (;;) {
         wait_event(xb_waitq, prod != xenstore_buf->rsp_prod);
-        while (1) 
-        {
+        while (1) {
             prod = xenstore_buf->rsp_prod;
             DEBUG("Rsp_cons %d, rsp_prod %d.\n", xenstore_buf->rsp_cons,
-                    xenstore_buf->rsp_prod);
+                  xenstore_buf->rsp_prod);
             if (xenstore_buf->rsp_prod - xenstore_buf->rsp_cons < sizeof(msg))
                 break;
             rmb();
-            memcpy_from_ring(xenstore_buf->rsp,
-                    &msg,
-                    MASK_XENSTORE_IDX(xenstore_buf->rsp_cons),
-                    sizeof(msg));
-            DEBUG("Msg len %d, %d avail, id %d.\n",
-                    msg.len + sizeof(msg),
-                    xenstore_buf->rsp_prod - xenstore_buf->rsp_cons,
-                    msg.req_id);
+            memcpy_from_ring(xenstore_buf->rsp, &msg,
+                             MASK_XENSTORE_IDX(xenstore_buf->rsp_cons),
+                             sizeof(msg));
+            DEBUG("Msg len %d, %d avail, id %d.\n", msg.len + sizeof(msg),
+                  xenstore_buf->rsp_prod - xenstore_buf->rsp_cons, msg.req_id);
+
             if (xenstore_buf->rsp_prod - xenstore_buf->rsp_cons <
-                    sizeof(msg) + msg.len)
+                sizeof(msg) + msg.len)
                 break;
 
             DEBUG("Message is good.\n");
 
-            if(msg.type == XS_WATCH_EVENT)
-            {
-		struct xenbus_event *event = malloc(sizeof(*event) + msg.len);
+            if (msg.type == XS_WATCH_EVENT) {
+                struct xenbus_event *event = malloc(sizeof(*event) + msg.len);
                 xenbus_event_queue *events = NULL;
-		char *data = (char*)event + sizeof(*event);
+                char *data = (char*)event + sizeof(*event);
                 struct watch *watch;
 
-                memcpy_from_ring(xenstore_buf->rsp,
-		    data,
+                memcpy_from_ring(xenstore_buf->rsp, data,
                     MASK_XENSTORE_IDX(xenstore_buf->rsp_cons + sizeof(msg)),
                     msg.len);
 
-		event->path = data;
-		event->token = event->path + strlen(event->path) + 1;
+                event->path = data;
+                event->token = event->path + strlen(event->path) + 1;
 
                 mb();
                 xenstore_buf->rsp_cons += msg.len + sizeof(msg);
@@ -288,15 +285,11 @@ static void xenbus_thread_func(void *ign)
                     printk("unexpected watch token %s\n", event->token);
                     free(event);
                 }
-            }
-
-            else
-            {
+            } else {
                 req_info[msg.req_id].reply = malloc(sizeof(msg) + msg.len);
-                memcpy_from_ring(xenstore_buf->rsp,
-                    req_info[msg.req_id].reply,
-                    MASK_XENSTORE_IDX(xenstore_buf->rsp_cons),
-                    msg.len + sizeof(msg));
+                memcpy_from_ring(xenstore_buf->rsp, req_info[msg.req_id].reply,
+                                 MASK_XENSTORE_IDX(xenstore_buf->rsp_cons),
+                                 msg.len + sizeof(msg));
                 mb();
                 xenstore_buf->rsp_cons += msg.len + sizeof(msg);
                 wake_up(&req_info[msg.req_id].waitq);
@@ -378,6 +371,55 @@ void init_xenbus(void)
 
 void fini_xenbus(void)
 {
+}
+
+void suspend_xenbus(void)
+{
+    /* Check for live requests and wait until they finish */
+    while (1)
+    {
+        spin_lock(&req_lock);
+        if (nr_live_reqs == 0)
+            break;
+        spin_unlock(&req_lock);
+        wait_event(req_wq, (nr_live_reqs == 0));
+    }
+
+    mask_evtchn(xenbus_evtchn);
+    xenstore_buf = NULL;
+    spin_unlock(&req_lock);
+}
+
+void resume_xenbus(int canceled)
+{
+    char *msg;
+    struct watch *watch;
+    struct write_req req[2];
+    struct xsd_sockmsg *rep;
+
+#ifdef CONFIG_PARAVIRT
+    get_xenbus(&start_info);
+#else
+    get_xenbus(0);
+#endif
+    unmask_evtchn(xenbus_evtchn);
+
+    if (!canceled) {
+        for (watch = watches; watch; watch = watch->next) {
+            req[0].data = watch->path;
+            req[0].len = strlen(watch->path) + 1;
+            req[1].data = watch->token;
+            req[1].len = strlen(watch->token) + 1;
+
+            rep = xenbus_msg_reply(XS_WATCH, XBT_NIL, req, ARRAY_SIZE(req));
+            msg = errmsg(rep);
+            if (msg)
+                xprintk("error on XS_WATCH: %s\n", msg);
+            free(rep);
+        }
+    }
+
+    notify_remote_via_evtchn(xenbus_evtchn);
 }
 
 /* Send data to xenbus.  This can block.  All of the requests are seen
@@ -501,7 +543,7 @@ static char *errmsg(struct xsd_sockmsg *rep)
     res[rep->len] = 0;
     free(rep);
     return res;
-}	
+}
 
 /* Send a debug message to xenbus.  Can block. */
 static void xenbus_debug_msg(const char *msg)
@@ -601,6 +643,7 @@ char* xenbus_watch_path_token( xenbus_transaction_t xbt, const char *path, const
         events = &xenbus_events;
 
     watch->token = strdup(token);
+    watch->path = strdup(path);
     watch->events = events;
     watch->next = watches;
     watches = watch;
@@ -636,6 +679,7 @@ char* xenbus_unwatch_path_token( xenbus_transaction_t xbt, const char *path, con
     for (prev = &watches, watch = *prev; watch; prev = &watch->next, watch = *prev)
         if (!strcmp(watch->token, token)) {
             free(watch->token);
+            free(watch->path);
             *prev = watch->next;
             free(watch);
             break;
