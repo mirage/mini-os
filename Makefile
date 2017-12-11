@@ -53,6 +53,7 @@ src-y += mm.c
 src-$(CONFIG_NETFRONT) += netfront.c
 src-$(CONFIG_PCIFRONT) += pcifront.c
 src-y += sched.c
+src-y += shutdown.c
 src-$(CONFIG_TEST) += test.c
 src-$(CONFIG_BALLOON) += balloon.c
 
