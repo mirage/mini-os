@@ -194,3 +194,13 @@ fini_gnttab(void)
 
     HYPERVISOR_grant_table_op(GNTTABOP_setup_table, &setup, 1);
 }
+
+void suspend_gnttab(void)
+{
+    arch_suspend_gnttab(gnttab_table, NR_GRANT_FRAMES);
+}
+
+void resume_gnttab(void)
+{
+    arch_resume_gnttab(gnttab_table, NR_GRANT_FRAMES);
+}

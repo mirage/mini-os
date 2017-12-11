@@ -12,6 +12,10 @@ unsigned long gnttab_end_transfer(grant_ref_t gref);
 int gnttab_end_access(grant_ref_t ref);
 const char *gnttabop_error(int16_t status);
 void fini_gnttab(void);
+void suspend_gnttab(void);
+void resume_gnttab(void);
 grant_entry_v1_t *arch_init_gnttab(int nr_grant_frames);
+void arch_suspend_gnttab(grant_entry_v1_t *gnttab_table, int nr_grant_frames);
+void arch_resume_gnttab(grant_entry_v1_t *gnttab_table, int nr_grant_frames);
 
 #endif /* !__GNTTAB_H__ */
