@@ -32,6 +32,7 @@
 #include <xen/xen.h>
 #include <xen/arch-x86/cpuid.h>
 #include <xen/arch-x86/hvm/start_info.h>
+#include <xen/hvm/params.h>
 
 #ifdef CONFIG_PARAVIRT
 /*
@@ -40,6 +41,11 @@
  */
 union start_info_union start_info_union;
 #endif
+
+/*
+ * This pointer holds a reference to the copy of the start_info struct.
+ */
+static start_info_t *start_info_ptr;
 
 /*
  * Shared page for communicating with the hypervisor.
@@ -213,18 +219,63 @@ arch_init(void *par)
 #ifdef CONFIG_PARAVIRT
 	memcpy(&start_info, par, sizeof(start_info));
 #endif
+	start_info_ptr = (start_info_t *)par;
 
 	start_kernel((start_info_t *)par);
 }
 
 void arch_pre_suspend(void)
 {
+#ifdef CONFIG_PARAVIRT
+   /* Replace xenstore and console mfns with the correspondent pfns */
+    start_info_ptr->store_mfn =
+        virt_to_pfn(mfn_to_virt(start_info_ptr->store_mfn));
+    start_info_ptr->console.domU.mfn =
+        virt_to_pfn(mfn_to_virt(start_info_ptr->console.domU.mfn));
+#else
+    uint64_t store_v;
+    uint64_t console_v;
 
+    if( hvm_get_parameter(HVM_PARAM_STORE_PFN, &store_v) )
+        BUG();
+    start_info_ptr->store_mfn = store_v;
+
+    if( hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &console_v) )
+        BUG();
+    start_info_ptr->console.domU.mfn = console_v;
+#endif
+    unmap_shared_info();
+
+    arch_mm_pre_suspend();
 }
 
 void arch_post_suspend(int canceled)
 {
+#if CONFIG_PARAVIRT
+    if (canceled) {
+        start_info_ptr->store_mfn = pfn_to_mfn(start_info_ptr->store_mfn);
+        start_info_ptr->console.domU.mfn = pfn_to_mfn(start_info_ptr->console.domU.mfn);
+    } else {
+        memcpy(&start_info, start_info_ptr, sizeof(start_info_t));
+    }
+#else
+    uint64_t store_v;
+    uint64_t console_v;
 
+    if (hvm_get_parameter(HVM_PARAM_STORE_PFN, &store_v))
+        BUG();
+    start_info_ptr->store_mfn = pfn_to_mfn(store_v);
+
+    if (hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &console_v))
+        BUG();
+    start_info_ptr->console.domU.mfn = pfn_to_mfn(console_v);
+#endif
+
+    HYPERVISOR_shared_info = map_shared_info((void*) start_info_ptr);
+#ifndef CONFIG_PARAVIRT
+    xen_callback_vector();
+#endif
+    arch_mm_post_suspend(canceled);
 }
 
 void
