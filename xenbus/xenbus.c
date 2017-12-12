@@ -129,6 +129,14 @@ void xenbus_wait_for_watch(xenbus_event_queue *queue)
         printk("unexpected path returned by watch\n");
 }
 
+void xenbus_release_wait_for_watch(xenbus_event_queue *queue)
+{
+    struct xenbus_event *event = malloc(sizeof(*event));
+    event->next = *queue;
+    *queue = event;
+    wake_up(&xenbus_watch_queue);
+}
+
 char* xenbus_wait_for_value(const char* path, const char* value, xenbus_event_queue *queue)
 {
     if (!queue)
@@ -318,7 +326,7 @@ static void release_xenbus_id(int id)
     req_info[id].in_use = 0;
     nr_live_reqs--;
     req_info[id].in_use = 0;
-    if (nr_live_reqs == NR_REQS - 1)
+    if (nr_live_reqs == 0 || nr_live_reqs == NR_REQS - 1)
         wake_up(&req_wq);
     spin_unlock(&req_lock);
 }
