@@ -389,6 +389,16 @@ static void setup_gate(unsigned int entry, void *addr, unsigned int dpl)
 #endif
 }
 
+void xen_callback_vector(void)
+{
+    if (hvm_set_parameter(HVM_PARAM_CALLBACK_IRQ,
+                         (2ULL << 56) | TRAP_xen_callback))
+    {
+        xprintk("Request for Xen HVM callback vector failed\n");
+        do_exit();
+    }
+}
+
 void trap_init(void)
 {
     setup_gate(TRAP_divide_error, &divide_error, 0);
@@ -415,12 +425,7 @@ void trap_init(void)
     gdt[GDTE_TSS] = (typeof(*gdt))INIT_GDTE((unsigned long)&tss, 0x67, 0x89);
     asm volatile ("ltr %w0" :: "rm" (GDTE_TSS * 8));
 
-    if ( hvm_set_parameter(HVM_PARAM_CALLBACK_IRQ,
-                           (2ULL << 56) | TRAP_xen_callback) )
-    {
-        xprintk("Request for Xen HVM callback vector failed\n");
-        do_exit();
-    }
+    xen_callback_vector();
 }
 
 void trap_fini(void)

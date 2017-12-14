@@ -67,6 +67,9 @@ extern shared_info_t *HYPERVISOR_shared_info;
 
 void trap_init(void);
 void trap_fini(void);
+#ifndef CONFIG_PARAVIRT
+void xen_callback_vector(void);
+#endif
 
 void arch_fini(void);
 
