@@ -119,12 +119,12 @@ void start_kernel(void* par)
 
 void pre_suspend(void)
 {
-
+    local_irq_disable();
 }
 
 void post_suspend(int canceled)
 {
-
+    local_irq_enable();
 }
 
 void stop_kernel(void)
