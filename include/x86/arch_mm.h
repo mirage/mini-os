@@ -279,6 +279,9 @@ pgentry_t *need_pgt(unsigned long addr);
 void arch_mm_preinit(void *p);
 unsigned long alloc_virt_kernel(unsigned n_pages);
 
+void arch_mm_pre_suspend(void);
+void arch_mm_post_suspend(int canceled);
+
 #ifndef CONFIG_PARAVIRT
 void arch_print_memmap(void);
 #endif
