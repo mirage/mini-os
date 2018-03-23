@@ -48,12 +48,12 @@
 
 static start_info_t *start_info_ptr;
 
+#ifdef CONFIG_XENBUS
 static const char *path = "control/shutdown";
 static const char *token = "control/shutdown";
 static xenbus_event_queue events = NULL;
 static int end_shutdown_thread = 0;
 
-#ifdef CONFIG_XENBUS
 /* This should be overridden by the application we are linked against. */
 __attribute__((weak)) void app_shutdown(unsigned reason)
 {
@@ -110,7 +110,6 @@ static void shutdown_thread(void *p)
         app_shutdown(shutdown_reason);
     }
 }
-#endif
 
 static void fini_shutdown(void)
 {
@@ -132,6 +131,7 @@ void init_shutdown(start_info_t *si)
     end_shutdown_thread = 0;
     create_thread("shutdown", shutdown_thread, NULL);
 }
+#endif
 
 void kernel_shutdown(int reason)
 {
@@ -154,7 +154,9 @@ void kernel_shutdown(int reason)
 
     printk("MiniOS will shutdown (reason = %s) ...\n", reason_str);
 
+#ifdef CONFIG_XENBUS
     fini_shutdown();
+#endif
 
     stop_kernel();
 
