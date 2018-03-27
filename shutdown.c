@@ -111,7 +111,15 @@ static void shutdown_thread(void *p)
     }
 }
 
-static void fini_shutdown(void)
+void init_shutdown(start_info_t *si)
+{
+    start_info_ptr = si;
+
+    end_shutdown_thread = 0;
+    create_thread("shutdown", shutdown_thread, NULL);
+}
+
+void fini_shutdown(void)
 {
     char *err;
 
@@ -123,48 +131,7 @@ static void fini_shutdown(void)
         do_exit();
     }
 }
-
-void init_shutdown(start_info_t *si)
-{
-    start_info_ptr = si;
-
-    end_shutdown_thread = 0;
-    create_thread("shutdown", shutdown_thread, NULL);
-}
 #endif
-
-void kernel_shutdown(int reason)
-{
-    char* reason_str = NULL;
-
-    switch(reason) {
-        case SHUTDOWN_poweroff:
-            reason_str = "poweroff";
-            break;
-        case SHUTDOWN_reboot:
-            reason_str = "reboot";
-            break;
-        case SHUTDOWN_crash:
-            reason_str = "crash";
-            break;
-        default:
-            do_exit();
-            break;
-    }
-
-    printk("MiniOS will shutdown (reason = %s) ...\n", reason_str);
-
-#ifdef CONFIG_XENBUS
-    fini_shutdown();
-#endif
-
-    stop_kernel();
-
-    for ( ;; ) {
-        struct sched_shutdown sched_shutdown = { .reason = reason };
-        HYPERVISOR_sched_op(SCHEDOP_shutdown, &sched_shutdown);
-    }
-}
 
 void kernel_suspend(void)
 {

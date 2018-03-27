@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <xenbus.h>
 #include <events.h>
+#include <shutdown.h>
 #include <mini-os/lib.h>
 
 extern int main(int argc, char *argv[], char *envp[]);
@@ -176,6 +177,9 @@ void _exit(int ret)
     printk("main returned %d\n", ret);
 #if defined(HAVE_LWIP) && defined(CONFIG_NETFRONT)
     stop_networking();
+#endif
+#ifdef CONFIG_XENBUS
+    fini_shutdown();
 #endif
     stop_kernel();
     if (!ret) {
