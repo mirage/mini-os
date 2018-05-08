@@ -204,7 +204,7 @@ install: libminios.a libminios-xen.pc
 	(cd include/xen && find -H . -type d | xargs -I {} $(INSTALL_DIR) $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/xen/{})
 	(cd include/xen && find -H . -type f | xargs -I {} $(INSTALL_DATA) {} $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/xen/{})
 	[ -L $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/mini-os ] || ln -s . $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/mini-os
-	$(INSTALL_DATA) $(foreach dir,$(EXTRA_INC),$(wildcard $(MINI-OS_ROOT)/$(dir)/*.h)) $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/
+	$(INSTALL_DATA) $(foreach dir,$(EXTRA_INC),$(wildcard $(MINIOS_ROOT)/$(dir)/*.h)) $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/
 	$(INSTALL_DATA) libminios-xen.pc $(REALDESTDIR)$(LIBDIR)/pkgconfig
 
 .PHONY: clean arch_clean
