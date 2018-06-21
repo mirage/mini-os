@@ -92,7 +92,7 @@ void unmap_shared_info(void)
 }
 #endif
 
-void do_hypervisor_callback(struct pt_regs *regs)
+__attribute__((weak)) void do_hypervisor_callback(struct pt_regs *regs)
 {
     unsigned long  l1, l2, l1i, l2i;
     unsigned int   port;

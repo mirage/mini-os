@@ -77,7 +77,9 @@ __attribute__((weak)) int app_main(void *p)
     return 0;
 }
 
-void start_kernel(void* par)
+/* Make start_kernel overrideable as well, for applications which don't want
+ * to run the idle thread or choose to initialize fewer features. */
+__attribute__((weak)) void start_kernel(void* par)
 {
     /* Set up events. */
     init_events();
