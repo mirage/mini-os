@@ -34,6 +34,7 @@ SECTIONS
 
         .note : {
                 *(.note)
+                *(.note.Xen)
                 *(.note.*)
         }
 
