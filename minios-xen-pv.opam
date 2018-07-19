@@ -1,5 +1,5 @@
 opam-version: "1.2"
-name: "minios-xen"
+name: "minios-xen-pv"
 version: "dev"
 maintainer: "mirageos-devel@lists.openmirage.org"
 authors: "Thomas Leonard <talex5@gmail.com>"
@@ -8,15 +8,19 @@ bug-reports: "https://github.com/mirage/mini-os/issues"
 license: "BSD + some optional GPL components"
 dev-repo: "https://github.com/talex5/mini-os.git"
 build: [
-  [make "debug=n"]
+  [make "debug=n"
+  "OPAM_NAME=minios-xen-pv" "CONFIG_PARAVIRT=y"]
 ]
 install: [
-  [make "install" "LIBDIR=%{prefix}%/lib" "INCLUDEDIR=%{prefix}%/include"]
+  [make "install"
+   "OPAM_NAME=minios-xen-pv"
+   "CONFIG_PARAVIRT=y"
+   "LIBDIR=%{prefix}%/lib" "INCLUDEDIR=%{prefix}%/include"]
 ]
 remove: [
   ["rm" "-r"
-    "%{prefix}%/lib/minios-xen"
-    "%{prefix}%/lib/pkgconfig/libminios-xen.pc"
-    "%{prefix}%/include/minios-xen"
+    "%{prefix}%/lib/minios-xen-pv"
+    "%{prefix}%/lib/pkgconfig/libminios-xen-pv.pc"
+    "%{prefix}%/include/minios-xen-pv"
   ]
 ]

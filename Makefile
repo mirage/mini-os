@@ -128,6 +128,15 @@ $(OBJ_DIR)/lwip.a: $(LWO)
 OBJS += $(OBJ_DIR)/lwip.a
 endif
 
+# explicitly note the flags passed for CONFIG_PARAVIRT
+# so they can be reexposed in libminios.pc
+ifeq ($(CONFIG_PARAVIRT),y)
+PVFLAG=-DCONFIG_PARAVIRT
+endif
+ifneq ($(CONFIG_PARAVIRT),y)
+PVFLAG=-UCONFIG_PARAVIRT
+endif
+
 OBJS := $(filter-out $(OBJ_DIR)/lwip%.o $(LWO), $(OBJS))
 
 ifeq ($(libc),y)
@@ -186,32 +195,34 @@ libminios.a: $(HEAD_OBJ) $(APP_O) $(OBJS) arch_lib
 	rm -f $@
 	ar rcs $@ $(APP_O) $(OBJS) $(OBJ_DIR)/$(TARGET_ARCH_DIR)/*.o
 
-%.pc: %.pc.in
+%.pc: libminios-xen.pc.in
 	sed \
 	  -e 's/@ARCH_LDFLAGS@/${ARCH_LDFLAGS}/g' \
 	  -e 's/@ARCH_CFLAGS@/${ARCH_CFLAGS}/g' \
+	  -e 's/@OPAM_NAME@/${OPAM_NAME}/g' \
+	  -e 's/@PVFLAG@/${PVFLAG}/g' \
 	  -e 's!@GCC_INSTALL@!${GCC_INSTALL}!g' \
 	  $^ > $@
 
 # Note: don't install directly to $(DESTDIR)$(LIBDIR) because pkg-config strips out directories in the
 # standard search path but we usually compile using -nostdlib.
 .PHONY: install
-install: libminios.a libminios-xen.pc
-	$(INSTALL_DIR) $(DESTDIR)$(LIBDIR)/minios-xen
+install: libminios.a lib$(OPAM_NAME).pc
+	$(INSTALL_DIR) $(DESTDIR)$(LIBDIR)/$(OPAM_NAME)
 	$(INSTALL_DIR) $(DESTDIR)$(LIBDIR)/pkgconfig
 	$(INSTALL_DIR) $(DESTDIR)$(INCLUDEDIR)
-	$(INSTALL_DIR) $(DESTDIR)$(INCLUDEDIR)/minios-xen
+	$(INSTALL_DIR) $(DESTDIR)$(INCLUDEDIR)/$(OPAM_NAME)
 	$(eval REALDESTDIR := $(abspath $(DESTDIR)))
-	$(INSTALL_DATA) libminios.a $(REALDESTDIR)$(LIBDIR)/minios-xen
-	$(INSTALL_DATA) $(OBJ_DIR)/$(TARGET_ARCH_DIR)/$(ARCH_LIB) $(REALDESTDIR)$(LIBDIR)/minios-xen
-	$(INSTALL_DATA) arch/$(TARGET_ARCH_FAM)/minios-$(MINIOS_TARGET_ARCH).lds $(REALDESTDIR)$(LIBDIR)/minios-xen/libminios.lds
-	(cd include && find -H . -type d | xargs -I {} $(INSTALL_DIR) $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/{})
-	(cd include && find -H . -type f | xargs -I {} $(INSTALL_DATA) {} $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/{})
-	(cd include/xen && find -H . -type d | xargs -I {} $(INSTALL_DIR) $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/xen/{})
-	(cd include/xen && find -H . -type f | xargs -I {} $(INSTALL_DATA) {} $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/xen/{})
-	[ -L $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/mini-os ] || ln -s . $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/mini-os
-	$(INSTALL_DATA) $(foreach dir,$(EXTRA_INC),$(wildcard $(MINIOS_ROOT)/include/$(dir)/*.h)) $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/
-	$(INSTALL_DATA) libminios-xen.pc $(REALDESTDIR)$(LIBDIR)/pkgconfig
+	$(INSTALL_DATA) libminios.a $(REALDESTDIR)$(LIBDIR)/$(OPAM_NAME)
+	$(INSTALL_DATA) $(OBJ_DIR)/$(TARGET_ARCH_DIR)/$(ARCH_LIB) $(REALDESTDIR)$(LIBDIR)/$(OPAM_NAME)
+	$(INSTALL_DATA) arch/$(TARGET_ARCH_FAM)/minios-$(MINIOS_TARGET_ARCH).lds $(REALDESTDIR)$(LIBDIR)/$(OPAM_NAME)/libminios.lds
+	(cd include && find -H . -type d | xargs -I {} $(INSTALL_DIR) $(REALDESTDIR)$(INCLUDEDIR)/$(OPAM_NAME)/{})
+	(cd include && find -H . -type f | xargs -I {} $(INSTALL_DATA) {} $(REALDESTDIR)$(INCLUDEDIR)/$(OPAM_NAME)/{})
+	(cd include/xen && find -H . -type d | xargs -I {} $(INSTALL_DIR) $(REALDESTDIR)$(INCLUDEDIR)/$(OPAM_NAME)/xen/{})
+	(cd include/xen && find -H . -type f | xargs -I {} $(INSTALL_DATA) {} $(REALDESTDIR)$(INCLUDEDIR)/$(OPAM_NAME)/xen/{})
+	[ -L $(REALDESTDIR)$(INCLUDEDIR)/minios-xen/mini-os ] || ln -s . $(REALDESTDIR)$(INCLUDEDIR)/$(OPAM_NAME)/mini-os
+	$(INSTALL_DATA) $(foreach dir,$(EXTRA_INC),$(wildcard $(MINIOS_ROOT)/include/$(dir)/*.h)) $(REALDESTDIR)$(INCLUDEDIR)/$(OPAM_NAME)/
+	$(INSTALL_DATA) lib$(OPAM_NAME).pc $(REALDESTDIR)$(LIBDIR)/pkgconfig
 
 .PHONY: clean arch_clean
 
