@@ -8,10 +8,10 @@ bug-reports: "https://github.com/mirage/mini-os/issues"
 license: "BSD + some optional GPL components"
 dev-repo: "https://github.com/talex5/mini-os.git"
 build: [
-  [make "debug=n"]
+  [make "debug=n" "CONFIG_PARAVIRT=n"]
 ]
 install: [
-  [make "install" "LIBDIR=%{prefix}%/lib" "INCLUDEDIR=%{prefix}%/include"]
+  [make "install" "CONFIG_PARAVIRT=n" "LIBDIR=%{prefix}%/lib" "INCLUDEDIR=%{prefix}%/include"]
 ]
 remove: [
   ["rm" "-r"
