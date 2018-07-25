@@ -221,6 +221,8 @@ arch_init(void *par)
 #endif
 	start_info_ptr = (start_info_t *)par;
 
+        printk("starting kernel...\n");
+
 	start_kernel((start_info_t *)par);
 }
 
