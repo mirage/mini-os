@@ -14,7 +14,7 @@ EXTRA_SRC += arch/$(EXTRA_INC)
 endif
 
 ifeq ($(MINIOS_TARGET_ARCH),x86_64)
-ARCH_CFLAGS := -m64 -mno-red-zone -fno-reorder-blocks
+ARCH_CFLAGS := -m64 -mno-red-zone -fno-reorder-blocks -fno-stack-protector
 ARCH_CFLAGS += -fno-asynchronous-unwind-tables
 ARCH_ASFLAGS := -m64
 ARCH_LDFLAGS := -m elf_x86_64
