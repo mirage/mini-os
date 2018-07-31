@@ -199,6 +199,9 @@ arch_init(void *par)
 	fpu_init();
 
 	/* Initialize SSE */
+        /* apply commit 1adacf97b from hwanju/xen "fix to enable pvh to use sse" */
+        if (xen_feature(XENFEAT_hvm_callback_vector))
+                native_write_cr4(native_read_cr4() | (1UL << 9) /* OSFXSR */);
 	sse_init();
 
 	/* Setup memory management info from start_info. */
