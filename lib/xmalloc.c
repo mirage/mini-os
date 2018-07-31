@@ -269,7 +269,10 @@ void xfree(const void *p)
 
 void *malloc(size_t size)
 {
-    return _xmalloc(size, DEFAULT_ALIGN);
+    void* p;
+    p = _xmalloc(size, DEFAULT_ALIGN);
+    printk("malloc(%lu) = %p\n", size, p);
+    return p;
 }
 
 void *realloc(void *ptr, size_t size)
