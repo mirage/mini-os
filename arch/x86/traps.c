@@ -209,13 +209,17 @@ void do_page_fault(struct pt_regs *regs, unsigned long error_code)
     unsigned long addr = read_cr2();
     struct sched_shutdown sched_shutdown = { .reason = SHUTDOWN_crash };
 
-    if ((error_code & TRAP_PF_WRITE) && handle_cow(addr))
+    printk("do_page_fault: page fault at addr %lx\n", addr);
+
+    if ((error_code & TRAP_PF_WRITE) && handle_cow(addr)) {
+            printk("page fault is fine; returning\n");
 	return;
+    }
 
     /* If we are already handling a page fault, and got another one
        that means we faulted in pagetable walk. Continuing here would cause
        a recursive fault */       
-    if(handling_pg_fault == 1) 
+    if(handling_pg_fault >= 1) 
     {
         printk("Page fault in pagetable walk (access to invalid memory?).\n"); 
         HYPERVISOR_sched_op(SCHEDOP_shutdown, &sched_shutdown);
