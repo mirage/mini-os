@@ -89,18 +89,11 @@ DO_ERROR( 5, "bounds", bounds)
 DO_ERROR_INFO( 6, "invalid operand", invalid_op, ILL_ILLOPN, regs->eip)
 DO_ERROR( 7, "device not available", device_not_available)
 DO_ERROR( 9, "coprocessor segment overrun", coprocessor_segment_overrun)
-//DO_ERROR(10, "invalid TSS", invalid_TSS)
+DO_ERROR(10, "invalid TSS", invalid_TSS)
 DO_ERROR(11, "segment not present", segment_not_present)
 DO_ERROR(12, "stack segment", stack_segment)
 DO_ERROR_INFO(17, "alignment check", alignment_check, BUS_ADRALN, 0)
 DO_ERROR(18, "machine check", machine_check)
-
-void do_invalid_TSS(struct pt_regs* regs, unsigned long error_code) {
-        printk("FATAL: invalid TSS! (0x%lx)\n", error_code);
-        printk("Regs address %p\n", regs);
-        dump_regs(regs);
-        do_exit();
-}
 
 void page_walk(unsigned long virt_address)
 {
