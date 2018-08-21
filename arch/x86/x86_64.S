@@ -315,6 +315,9 @@ ENTRY(bounds)
 ENTRY(invalid_op)
         zeroentry do_invalid_op
 
+ENTRY(double_fault)
+        zeroentry do_double_fault
+
 
 ENTRY(coprocessor_segment_overrun)
         zeroentry do_coprocessor_segment_overrun

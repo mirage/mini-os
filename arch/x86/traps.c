@@ -19,6 +19,7 @@ void overflow(void);
 void bounds(void);
 void invalid_op(void);
 void device_not_available(void);
+void double_fault(void);
 void coprocessor_segment_overrun(void);
 void invalid_TSS(void);
 void segment_not_present(void);
@@ -36,15 +37,14 @@ void dump_regs(struct pt_regs *regs)
 {
     printk("Thread: %s\n", current ? current->name : "*NONE*");
 #ifdef __i386__    
-    printk("EIP: %lx, EFLAGS %lx.\n", regs->eip, regs->eflags);
     printk("EBX: %08lx ECX: %08lx EDX: %08lx\n",
-	   regs->ebx, regs->ecx, regs->edx);
+          regs->ebx, regs->ecx, regs->edx);
     printk("ESI: %08lx EDI: %08lx EBP: %08lx EAX: %08lx\n",
-	   regs->esi, regs->edi, regs->ebp, regs->eax);
+          regs->esi, regs->edi, regs->ebp, regs->eax);
     printk("DS: %04x ES: %04x orig_eax: %08lx, eip: %08lx\n",
-	   regs->xds, regs->xes, regs->orig_eax, regs->eip);
+          regs->xds, regs->xes, regs->orig_eax, regs->eip);
     printk("CS: %04x EFLAGS: %08lx esp: %08lx ss: %04x\n",
-	   regs->xcs, regs->eflags, regs->esp, regs->xss);
+          regs->xcs, regs->eflags, regs->esp, regs->xss);
 #else
     printk("RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->rip);
     printk("\nRSP: %04lx:%016lx  EFLAGS: %08lx\n", 
@@ -88,6 +88,7 @@ DO_ERROR( 4, "overflow", overflow)
 DO_ERROR( 5, "bounds", bounds)
 DO_ERROR_INFO( 6, "invalid operand", invalid_op, ILL_ILLOPN, regs->eip)
 DO_ERROR( 7, "device not available", device_not_available)
+DO_ERROR( 8, "double fault", double_fault)
 DO_ERROR( 9, "coprocessor segment overrun", coprocessor_segment_overrun)
 DO_ERROR(10, "invalid TSS", invalid_TSS)
 DO_ERROR(11, "segment not present", segment_not_present)
@@ -412,6 +413,7 @@ void trap_init(void)
     setup_gate(TRAP_bounds, &bounds, 0);
     setup_gate(TRAP_invalid_op, &invalid_op, 0);
     setup_gate(TRAP_no_device, &device_not_available, 0);
+    setup_gate(TRAP_double_fault, &double_fault, 0);
     setup_gate(TRAP_copro_seg, &coprocessor_segment_overrun, 0);
     setup_gate(TRAP_invalid_tss, &invalid_TSS, 0);
     setup_gate(TRAP_no_segment, &segment_not_present, 0);
