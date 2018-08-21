@@ -19,6 +19,7 @@ void overflow(void);
 void bounds(void);
 void invalid_op(void);
 void device_not_available(void);
+void double_fault(void);
 void coprocessor_segment_overrun(void);
 void invalid_TSS(void);
 void segment_not_present(void);
@@ -88,6 +89,7 @@ DO_ERROR( 4, "overflow", overflow)
 DO_ERROR( 5, "bounds", bounds)
 DO_ERROR_INFO( 6, "invalid operand", invalid_op, ILL_ILLOPN, regs->eip)
 DO_ERROR( 7, "device not available", device_not_available)
+DO_ERROR( 8, "double fault", double_fault)
 DO_ERROR( 9, "coprocessor segment overrun", coprocessor_segment_overrun)
 DO_ERROR(10, "invalid TSS", invalid_TSS)
 DO_ERROR(11, "segment not present", segment_not_present)
@@ -408,6 +410,7 @@ void trap_init(void)
     setup_gate(TRAP_bounds, &bounds, 0);
     setup_gate(TRAP_invalid_op, &invalid_op, 0);
     setup_gate(TRAP_no_device, &device_not_available, 0);
+    setup_gate(TRAP_double_fault, &double_fault, 0);
     setup_gate(TRAP_copro_seg, &coprocessor_segment_overrun, 0);
     setup_gate(TRAP_invalid_tss, &invalid_TSS, 0);
     setup_gate(TRAP_no_segment, &segment_not_present, 0);
