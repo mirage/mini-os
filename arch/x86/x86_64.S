@@ -351,10 +351,10 @@ ENTRY(divide_error)
 ENTRY(spurious_interrupt_bug)
         zeroentry do_spurious_interrupt_bug
             
-/*
+
 ENTRY(page_fault)
         errorentry do_page_fault
-*/
+
 
 
 
