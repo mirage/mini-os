@@ -332,7 +332,7 @@ static trap_info_t trap_table[] = {
     { 11, 0, __KERNEL_CS, (unsigned long)segment_not_present         },
     { 12, 0, __KERNEL_CS, (unsigned long)stack_segment               },
     { 13, 0, __KERNEL_CS, (unsigned long)general_protection          },
-    { 14, 0, __KERNEL_CS, (unsigned long)page_fault                  },
+//    { 14, 0, __KERNEL_CS, (unsigned long)page_fault                  },
     { 15, 0, __KERNEL_CS, (unsigned long)spurious_interrupt_bug      },
     { 16, 0, __KERNEL_CS, (unsigned long)coprocessor_error           },
     { 17, 0, __KERNEL_CS, (unsigned long)alignment_check             },
