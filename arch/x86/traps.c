@@ -119,6 +119,55 @@ void page_walk(unsigned long virt_address)
 
 }
 
+static int handle_cow(unsigned long addr) {
+        pgentry_t *tab = pt_base, page;
+	unsigned long new_page;
+#ifdef CONFIG_PARAVIRT
+	int rc;
+#endif
+
+#if defined(__x86_64__)
+        page = tab[l4_table_offset(addr)];
+	if (!(page & _PAGE_PRESENT))
+	    return 0;
+        tab = pte_to_virt(page);
+#endif
+        page = tab[l3_table_offset(addr)];
+	if (!(page & _PAGE_PRESENT))
+	    return 0;
+        tab = pte_to_virt(page);
+
+        page = tab[l2_table_offset(addr)];
+	if (!(page & _PAGE_PRESENT))
+	    return 0;
+	if ( page & _PAGE_PSE )
+	    return 0;
+        tab = pte_to_virt(page);
+        
+        page = tab[l1_table_offset(addr)];
+	if (!(page & _PAGE_PRESENT))
+	    return 0;
+	/* Only support CoW for the zero page.  */
+	if (PHYS_PFN(page) != mfn_zero)
+	    return 0;
+
+	new_page = alloc_pages(0);
+	memset((void*) new_page, 0, PAGE_SIZE);
+
+#ifdef CONFIG_PARAVIRT
+	rc = HYPERVISOR_update_va_mapping(addr & PAGE_MASK, __pte(virt_to_mach(new_page) | L1_PROT), UVMF_INVLPG);
+	if (!rc)
+		return 1;
+
+	printk("Map zero page to %lx failed: %d.\n", addr, rc);
+	return 0;
+#else
+	tab[l1_table_offset(addr)] = virt_to_mach(new_page) | L1_PROT;
+	invlpg(addr);
+	return 1;
+#endif
+}
+
 static void do_stack_walk(unsigned long frame_base)
 {
     unsigned long *frame = (void*) frame_base;
@@ -154,6 +203,56 @@ static void dump_mem(unsigned long addr)
     printk("\n");
 }
 
+static int handling_pg_fault = 0;
+
+void do_page_fault(struct pt_regs *regs, unsigned long error_code)
+{
+    unsigned long addr = read_cr2();
+    struct sched_shutdown sched_shutdown = { .reason = SHUTDOWN_crash };
+
+    printk("do_page_fault: page fault at addr %lx\n", addr);
+
+    if ((error_code & TRAP_PF_WRITE) && handle_cow(addr)) {
+            printk("page fault is fine; returning\n");
+	return;
+    }
+
+    /* If we are already handling a page fault, and got another one
+       that means we faulted in pagetable walk. Continuing here would cause
+       a recursive fault */       
+    if(handling_pg_fault >= 1) 
+    {
+        printk("Page fault in pagetable walk (access to invalid memory?).\n"); 
+        HYPERVISOR_sched_op(SCHEDOP_shutdown, &sched_shutdown);
+    }
+    handling_pg_fault++;
+    barrier();
+
+#if defined(__x86_64__)
+    printk("Page fault at linear address %lx, rip %lx, regs %p, sp %lx, our_sp %p, code %lx\n",
+           addr, regs->rip, regs, regs->rsp, &addr, error_code);
+#else
+    printk("Page fault at linear address %lx, eip %lx, regs %p, sp %lx, our_sp %p, code %lx\n",
+           addr, regs->eip, regs, regs->esp, &addr, error_code);
+#endif
+
+    dump_regs(regs);
+#if defined(__x86_64__)
+    do_stack_walk(regs->rbp);
+    dump_mem(regs->rsp);
+    dump_mem(regs->rbp);
+    dump_mem(regs->rip);
+#else
+    do_stack_walk(regs->ebp);
+    dump_mem(regs->esp);
+    dump_mem(regs->ebp);
+    dump_mem(regs->eip);
+#endif
+    page_walk(addr);
+    HYPERVISOR_sched_op(SCHEDOP_shutdown, &sched_shutdown);
+    /* We should never get here ... but still */
+    handling_pg_fault--;
+}
 
 void do_general_protection(struct pt_regs *regs, long error_code)
 {
@@ -233,7 +332,7 @@ static trap_info_t trap_table[] = {
     { 11, 0, __KERNEL_CS, (unsigned long)segment_not_present         },
     { 12, 0, __KERNEL_CS, (unsigned long)stack_segment               },
     { 13, 0, __KERNEL_CS, (unsigned long)general_protection          },
-//    { 14, 0, __KERNEL_CS, (unsigned long)page_fault                  },
+    { 14, 0, __KERNEL_CS, (unsigned long)page_fault                  },
     { 15, 0, __KERNEL_CS, (unsigned long)spurious_interrupt_bug      },
     { 16, 0, __KERNEL_CS, (unsigned long)coprocessor_error           },
     { 17, 0, __KERNEL_CS, (unsigned long)alignment_check             },
