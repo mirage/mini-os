@@ -160,7 +160,7 @@ endif
 
 # Configuration defaults
 ifeq ($(TARGET_ARCH_FAM),x86)
-CONFIG_PARAVIRT ?= n
+CONFIG_PARAVIRT ?= y
 else
 CONFIG_PARAVIRT ?= n
 endif
