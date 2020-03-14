@@ -37,6 +37,8 @@ void default_handler(evtchn_port_t port, struct pt_regs *regs, void *data);
 
 static unsigned long bound_ports[NR_EVS/(8*sizeof(unsigned long))];
 
+extern uint32_t console_evtchn;
+
 void unbind_all_ports(void)
 {
     int i;

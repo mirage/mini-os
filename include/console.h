@@ -64,8 +64,6 @@ struct consfront_dev {
 #endif
 };
 
-extern uint32_t console_evtchn;
-
 void print(int direct, const char *fmt, va_list args);
 void printk(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 void xprintk(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
