@@ -15,7 +15,8 @@ OUTPUT_ARCH(i386)
 ENTRY(_start)
 SECTIONS
 {
-        . = 0x0;
+        /* do not put anything in the first 1MB, to not collide with ACPI data */
+        . = 0x100000;
         _text = .;			/* Text and read-only data */
         .text : {
                 *(.bootcode)

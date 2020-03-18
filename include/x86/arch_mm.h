@@ -44,7 +44,8 @@
 /*
  * Physical address space usage:
  *
- * 0..._edata: kernel text/data
+ * 0...100000: x86 holes (ACPI etc)
+ * 100000..._edata: kernel text/data
  * *stack    : kernel stack (thread 0)
  * hypervisor allocated data: p2m_list, start_info page, xenstore page,
  *                            console page, initial page tables
