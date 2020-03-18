@@ -233,7 +233,11 @@ static __inline__ paddr_t machine_to_phys(maddr_t machine)
 	return phys;
 }
 
-#define VIRT_START                 ((unsigned long)&_text)
+/*
+ * This is where physical memory is mapped. It is tightly tied to the page
+ * tables constructed in arch/x86/x86_64.S
+ */
+#define VIRT_START                 CONST(0x0)
 
 #define to_phys(x)                 ((unsigned long)(x)-VIRT_START)
 #define to_virt(x)                 ((void *)((unsigned long)(x)+VIRT_START))
