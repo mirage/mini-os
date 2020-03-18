@@ -30,6 +30,8 @@ void get_console(void *p)
     console_evtchn = si->console.domU.evtchn;
 }
 #else
+/* preallocated in arch/x86/x86_64.S */
+extern char console_ring_page[PAGE_SIZE];
 void get_console(void *p)
 {
     uint64_t v = -1;
@@ -40,7 +42,9 @@ void get_console(void *p)
 
     if (hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v))
         BUG();
-    console_ring = (struct xencons_interface *)map_frame_virt(v);
+    if (map_frame_rw((unsigned long)console_ring_page, v))
+        BUG();
+    console_ring = (struct xencons_interface *)console_ring_page;
 }
 #endif
 
