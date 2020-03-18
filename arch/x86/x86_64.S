@@ -33,7 +33,7 @@ _start:
 stack_start:
         .quad stack+(2*__STACK_SIZE)
 
-.globl shared_info, hypercall_page
+.globl shared_info, hypercall_page, console_ring_page
         /* Unpleasant -- the PTE that maps this page is actually overwritten */
         /* to map the real shared-info page! :-)                             */
         .align __PAGE_SIZE
@@ -41,6 +41,9 @@ shared_info:
         .fill __PAGE_SIZE,1,0
 
 hypercall_page:
+        .fill __PAGE_SIZE,1,0
+
+console_ring_page:
         .fill __PAGE_SIZE,1,0
 
 .text
