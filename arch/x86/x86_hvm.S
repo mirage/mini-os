@@ -1,6 +1,14 @@
 /* Included by x86_[32|64].S */
 
         ELFNOTE(Xen, XEN_ELFNOTE_PHYS32_ENTRY, .long _start)
+
+        /*
+         * Make sure there is at least one page in .bootcode section, it will
+         * get reused as CoW zero page.
+         */
+.section .bootcode
+        .fill __PAGE_SIZE,1,0
+
 .text
         .code32                 /* Always starts in 32bit flat mode. */
 
