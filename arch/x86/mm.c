@@ -305,8 +305,10 @@ static void build_pagetable(unsigned long *start_pfn, unsigned long *max_pfn)
     start_address = (unsigned long)pfn_to_virt(pfn_to_map);
     end_address = (unsigned long)pfn_to_virt(*max_pfn);
 
+#ifdef CONFIG_VERBOSE_BOOT
     /* We worked out the virtual memory range to map, now mapping loop */
     printk("Mapping memory range 0x%lx - 0x%lx\n", start_address, end_address);
+#endif
 
     while ( start_address < end_address )
     {
@@ -394,7 +396,9 @@ static void set_readonly(void *text, void *etext)
     int rc;
 #endif
 
+#ifdef CONFIG_VERBOSE_BOOT
     printk("setting %p-%p readonly\n", text, etext);
+#endif
 
     while ( start_address + page_size <= end_address )
     {
@@ -433,7 +437,11 @@ static void set_readonly(void *text, void *etext)
 #endif
         }
         else
+        {
+#ifdef CONFIG_VERBOSE_BOOT
             printk("skipped %lx\n", start_address);
+#endif
+        }
 
         start_address += page_size;
 
@@ -868,12 +876,14 @@ void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p)
 {
     unsigned long start_pfn, max_pfn;
 
+#ifdef CONFIG_VERBOSE_BOOT
     printk("      _text: %p(VA)\n", &_text);
     printk("     _etext: %p(VA)\n", &_etext);
     printk("   _erodata: %p(VA)\n", &_erodata);
     printk("     _edata: %p(VA)\n", &_edata);
     printk("stack start: %p(VA)\n", stack);
     printk("       _end: %p(VA)\n", &_end);
+#endif
 
     /* First page follows page table pages. */
     start_pfn = first_free_pfn;
@@ -882,8 +892,10 @@ void arch_init_mm(unsigned long* start_pfn_p, unsigned long* max_pfn_p)
     if ( max_pfn >= MAX_MEM_SIZE / PAGE_SIZE )
         max_pfn = MAX_MEM_SIZE / PAGE_SIZE - 1;
 
+#ifdef CONFIG_VERBOSE_BOOT
     printk("  start_pfn: %lx\n", start_pfn);
     printk("    max_pfn: %lx\n", max_pfn);
+#endif
 
     build_pagetable(&start_pfn, &max_pfn);
     clear_bootstrap();

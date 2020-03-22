@@ -124,6 +124,7 @@ static void print_start_of_day(void *p)
     start_info_t *si = p;
 
     printk("Xen Minimal OS (pv)!\n");
+#ifdef CONFIG_VERBOSE_BOOT
     printk("  start_info: %p(VA)\n", si);
     printk("    nr_pages: 0x%lx\n", si->nr_pages);
     printk("  shared_inf: 0x%08lx(MA)\n", si->shared_info);
@@ -135,6 +136,7 @@ static void print_start_of_day(void *p)
     printk("       flags: 0x%x\n", (unsigned int)si->flags);
     printk("    cmd_line: %s\n", cmdline);
     printk("       stack: %p-%p\n", stack, stack + sizeof(stack));
+#endif
 }
 #else
 static void hpc_init(void)
@@ -171,6 +173,7 @@ static void print_start_of_day(void *p)
     struct hvm_start_info *si = p;
 
     printk("Xen Minimal OS (hvm)!\n");
+#ifdef CONFIG_VERBOSE_BOOT
     printk("  start_info: %p(VA)\n", si);
     printk("  shared_inf: %p(VA)\n", HYPERVISOR_shared_info);
     printk("     modlist: 0x%lx(PA)\n", (unsigned long)si->modlist_paddr);
@@ -179,6 +182,7 @@ static void print_start_of_day(void *p)
     printk("    cmd_line: %s\n", cmdline);
     printk("       stack: %p-%p\n", stack, stack + sizeof(stack));
     arch_print_memmap();
+#endif
 }
 #endif
 

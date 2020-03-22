@@ -178,6 +178,7 @@ CONFIG_KBDFRONT ?= y
 CONFIG_CONSFRONT ?= y
 CONFIG_XENBUS ?= y
 CONFIG_XC ?=y
+CONFIG_VERBOSE_BOOT ?= y
 CONFIG_LWIP ?= $(lwip)
 CONFIG_BALLOON ?= n
 # Setting CONFIG_USE_XEN_CONSOLE copies all print output to the Xen emergency

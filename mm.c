@@ -154,8 +154,10 @@ static void init_page_allocator(unsigned long min, unsigned long max)
     chunk_head_t *ch;
     chunk_tail_t *ct;
 
+#ifdef CONFIG_VERBOSE_BOOT
     printk("MM: Initialise page allocator for %lx(%lx)-%lx(%lx)\n",
            (u_long)to_virt(min), min, (u_long)to_virt(max), max);
+#endif
     for ( i = 0; i < FREELIST_SIZE; i++ )
     {
         free_head[i]       = &free_tail[i];
@@ -191,7 +193,9 @@ static void init_page_allocator(unsigned long min, unsigned long max)
         if ( r_max > max )
             r_max = max;
 
+#ifdef CONFIG_VERBOSE_BOOT
         printk("    Adding memory range %lx-%lx\n", r_min, r_max);
+#endif
 
         /* The buddy lists are addressed in high memory. */
         r_min = (unsigned long)to_virt(r_min);
@@ -394,7 +398,9 @@ void init_mm(void)
 
     unsigned long start_pfn, max_pfn;
 
+#ifdef CONFIG_VERBOSE_BOOT
     printk("MM: Init\n");
+#endif
 
     get_max_pages();
     arch_init_mm(&start_pfn, &max_pfn);
@@ -402,7 +408,9 @@ void init_mm(void)
      * now we can initialise the page allocator
      */
     init_page_allocator(PFN_PHYS(start_pfn), PFN_PHYS(max_pfn));
+#ifdef CONFIG_VERBOSE_BOOT
     printk("MM: done\n");
+#endif
 
     arch_init_p2m(max_pfn);
     

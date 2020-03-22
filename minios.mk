@@ -29,6 +29,10 @@ else
 DEF_CFLAGS += -O3 $(call cc-option,$(CC),-fno-tree-loop-distribute-patterns,)
 endif
 
+ifeq ($(CONFIG_VERBOSE_BOOT),y)
+DEF_CFLAGS += -DCONFIG_VERBOSE_BOOT
+endif
+
 # Make the headers define our internal stuff
 DEF_CFLAGS += -D__INSIDE_MINIOS__
 
